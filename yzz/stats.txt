@@ -1,0 +1,54 @@
+Wed Aug 24 22:28:56 2016    main.profile
+
+         104303 function calls (102409 primitive calls) in 17.849 seconds
+
+   Ordered by: cumulative time
+   List reduced from 1626 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.007    0.007   17.851   17.851 mnist.py:1(<module>)
+        1    0.265    0.265   16.867   16.867 mnist.py:120(trainByADMM)
+       40    1.188    0.030   12.425    0.311 mnist.py:143(updateA)
+      100    0.058    0.001    8.129    0.081 mnist.py:10(faster_inverse)
+      100    0.001    0.000    7.674    0.077 mnist.py:18(lapack_inverse)
+      100    7.531    0.075    7.531    0.075 {numpy.linalg.lapack_lite.dgesv}
+      366    5.881    0.016    5.881    0.016 {method 'dot' of 'numpy.ndarray' objects}
+       40    0.617    0.015    2.130    0.053 mnist.py:149(updateZ)
+       60    0.059    0.001    2.011    0.034 mnist.py:138(updateW)
+       80    0.502    0.006    0.670    0.008 mnist.py:210(regularElementWiseCost)
+     1397    0.640    0.000    0.640    0.000 {numpy.core.multiarray.array}
+        1    0.015    0.015    0.493    0.493 mnist.py:28(__init__)
+        2    0.322    0.161    0.441    0.221 mnist.py:77(loadmnist)
+      124    0.231    0.002    0.312    0.003 mnist.py:205(actfun)
+      424    0.002    0.000    0.250    0.001 function_base.py:786(copy)
+        1    0.006    0.006    0.201    0.201 mnist.py:221(predict)
+        1    0.001    0.001    0.140    0.140 pyplot.py:17(<module>)
+        1    0.003    0.003    0.096    0.096 __init__.py:106(<module>)
+        3    0.095    0.032    0.095    0.032 {method 'randn' of 'mtrand.RandomState' objects}
+        1    0.003    0.003    0.095    0.095 colorbar.py:20(<module>)
+
+
+=====================  Callers ====================
+   Ordered by: cumulative time
+   List reduced from 1626 to 10 due to restriction <10>
+
+Function                                   was called by...
+                                               ncalls  tottime  cumtime
+mnist.py:1(<module>)                       <-
+mnist.py:120(trainByADMM)                  <-       1    0.265   16.867  mnist.py:1(<module>)
+mnist.py:143(updateA)                      <-      40    1.188   12.425  mnist.py:120(trainByADMM)
+mnist.py:10(faster_inverse)                <-      60    0.002    0.241  mnist.py:138(updateW)
+                                                   40    0.056    7.888  mnist.py:143(updateA)
+mnist.py:18(lapack_inverse)                <-     100    0.001    7.674  mnist.py:10(faster_inverse)
+{numpy.linalg.lapack_lite.dgesv}           <-     100    7.531    7.531  mnist.py:18(lapack_inverse)
+{method 'dot' of 'numpy.ndarray' objects}  <-       3    0.042    0.042  mnist.py:28(__init__)
+                                                  180    1.711    1.711  mnist.py:138(updateW)
+                                                  120    3.228    3.228  mnist.py:143(updateA)
+                                                   40    0.816    0.816  mnist.py:149(updateZ)
+                                                   20    0.016    0.016  mnist.py:164(updateLastZ)
+                                                    3    0.067    0.067  mnist.py:221(predict)
+mnist.py:149(updateZ)                      <-      40    0.617    2.130  mnist.py:120(trainByADMM)
+mnist.py:138(updateW)                      <-      60    0.059    2.011  mnist.py:120(trainByADMM)
+mnist.py:210(regularElementWiseCost)       <-      80    0.502    0.670  mnist.py:149(updateZ)
+
+

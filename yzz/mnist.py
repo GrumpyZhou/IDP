@@ -1,211 +1,307 @@
+import numpy as np
 import os, struct
 from array import array as pyarray
-import numpy as np
-from pylab import *
-from numpy import *
+from numpy import append, array, int8, uint8, zeros
+import matplotlib.pyplot as plt
+from numpy.linalg import lapack_lite
 
-IMG_NUM = 100
-FIRST_LAYER = 100
-SEC_LAYER = 100
-SIZE = 784
+lapack_routine = lapack_lite.dgesv
 
-def load_mnist(dataset="training", digits=np.arange(10), path="."):
-	if dataset == "training":
-		fname_img = os.path.join(path, 'train-images.idx3-ubyte')
-		fname_lbl = os.path.join(path, 'train-labels.idx1-ubyte')
-	elif dataset == "testing":
-		fname_img = os.path.join(path, 't10k-images-idx3-ubyte')
-		fname_lbl = os.path.join(path, 't10k-labels-idx1-ubyte')
-	else:
-		raise ValueError("dataset must be 'testing' or 'training'")
+def faster_inverse(A,idmatrix):
+    b = idmatrix
 
-	flbl = open(fname_lbl, 'rb')
-	magic_nr, size = struct.unpack(">II", flbl.read(8))
-	lbl = pyarray("b", flbl.read())
-	flbl.close()
+    n_eq = A.shape[0]
+    n_rhs = A.shape[1]
+    pivots = zeros(n_eq, np.intc)
+    identity  = np.eye(n_eq)
 
-	fimg = open(fname_img, 'rb')
-	magic_nr, size, rows, cols = struct.unpack(">IIII", fimg.read(16))
-	img = pyarray("B", fimg.read())
-	fimg.close()
+    def lapack_inverse(a):
+        b = np.copy(identity)
+        pivots = zeros(n_eq, np.intc)
+        results = lapack_lite.dgesv(n_eq, n_rhs, a, n_eq, pivots, b, n_eq, 0)
+        return b
 
-	ind = [ k for k in range(size) if lbl[k] in digits ]
-	N = len(ind)
-	N = IMG_NUM 
+    return array(lapack_inverse(A))
 
-	images = zeros((N, rows, cols), dtype=uint8)
-	labels = zeros((N, 1), dtype=int8)
-	for i in range(N):
-		images[i] = array(img[ ind[i]*rows*cols : (ind[i]+1)*rows*cols ]).reshape((rows, cols))
-		labels[i] = lbl[ind[i]]
+class NeuralNetwork():
 
-	re_img = zeros((rows*cols,N),dtype=uint8)
-	for i in range(N):	
-		re_img[:,i] = images[i,:,:].reshape(rows*cols)
+    def __init__(self, layers, neurons, trainnum, testnum, iternum, stepsize, epsilon):
+
+        '''
+        :param layers: how many layers the network has
+        :param neurons: the number of neurons in each layer
+        :param trainnum: the number of training images
+        :param testnum: the number of test images
+        :param iternum: the iteration number for ADMM
+        :param stepsize: the stepsize for BP
+        :param epsilon: the constant for initializing w
+        '''
+        self.L = layers
+        self.neurons = neurons
+        self.trainnum = trainnum
+        self.itnum = iternum
+        self.testnum = testnum
+        self.stepsize= stepsize
+        self.beta = 1
+        self.gamma = 10
+        self.losscost = list()
+        self.act1 = list()
+        self.act2 = list()
+        self.w1 = list()
+        self.w2 = list()
+        self.w3 = list()
+       # self.grada = [0,0,0]
+       # self.gradz = [0,0,0,0]
+       # self.gradw = [0,0,0,0]
+
+        '''
+        initialize w, a, z
+        '''
+        a0, self.labels, self.y = self.loadmnist()
+       # self.a = [a0,epsilon*np.random.randn(neurons[1],self.trainnum),epsilon*np.random.randn(neurons[2],self.trainnum)]
+       # self.z = [0,epsilon*np.random.randn(neurons[1],self.trainnum),epsilon*np.random.randn(neurons[2],self.trainnum),epsilon*np.random.randn(neurons[3],self.trainnum)]
+        self.w = [0,epsilon*np.random.randn(neurons[1],784),epsilon*np.random.randn(neurons[2],neurons[1]),epsilon*np.random.randn(neurons[3],neurons[2])]
+        self.a = [a0]
+        self.z = [0]
+        self.z.append(self.w[1].dot(self.a[0]))
+        self.a.append(self.actfun(self.z[1]))
+        self.z.append(self.w[2].dot(self.a[1]))
+        self.a.append(self.actfun(self.z[2]))
+        self.z.append(self.w[3].dot(self.a[2]))
+
+       # print "create a neural network with ", self.L, "layers. The number of neurons: ", self.neurons
+       # print "w:", self.w[1].shape, self.w[2].shape, self.w[3].shape
+       # print "z:", self.z[1].shape, self.z[2].shape, self.z[3].shape
+       # print "a:", self.a[0].shape, self.a[1].shape, self.a[2].shape
+
+    def loadmnist(self, dataset="training", digits=np.arange(10), path="/Users/kidsaga/Documents/TUM/program/IDP"):
+
+        '''
+        load the mnist data
+        '''
+        if dataset == "training":
+            fname_img = os.path.join(path, 'train-images.idx3-ubyte')
+            fname_lbl = os.path.join(path, 'train-labels.idx1-ubyte')
+            N = self.trainnum
+        elif dataset == "testing":
+            fname_img = os.path.join(path, 't10k-images.idx3-ubyte')
+            fname_lbl = os.path.join(path, 't10k-labels.idx1-ubyte')
+            N = self.testnum
+        else:
+            raise ValueError("dataset must be 'testing' or 'training'")
+
+        flbl = open(fname_lbl, 'rb')
+        magic_nr, size = struct.unpack(">II", flbl.read(8))
+        lbl = pyarray("b", flbl.read())
+        flbl.close()
+
+        fimg = open(fname_img, 'rb')
+        magic_nr, size, rows, cols = struct.unpack(">IIII", fimg.read(16))
+        img = pyarray("B", fimg.read())
+        fimg.close()
+        ind = [k for k in range(size) if lbl[k] in digits]
+
+        images = np.zeros((N, rows, cols), dtype=uint8)
+        labels = np.zeros((N, 1), dtype=int8)
+        for i in range(N):
+            images[i] = array(img[ind[i] * rows * cols: (ind[i] + 1) * rows * cols]).reshape((rows, cols))
+            labels[i] = lbl[ind[i]]
+
+        re_img = np.zeros((784,N),dtype=np.float64)
+        for i in range(N):
+            re_img[:,i] = images[i,:,:].reshape(784)
+
+        y = np.zeros((10,N),dtype=uint8)
+        for i in range(len(labels)):
+            y[labels[i],i] = 1
+        #print sum(sum(y))
+        return re_img, labels, y
+
+    def trainByADMM(self):
+        idmatrixes = list()
+        idmatrixes.append(np.identity(self.w[2].T.shape[0]))
+        idmatrixes.append(np.identity(self.w[3].T.shape[0]))
+        idmatrixes.append(np.identity(self.trainnum))
+        for k in range(self.itnum):
+            #print k
+            for i in range(1,self.L):
+                self.w[i] = self.updateW(i,idmatrixes)
+                self.a[i] = self.updateA(i,idmatrixes)
+                self.z[i] = self.updateZ(i)
+
+            self.w[self.L] = self.updateW(self.L,idmatrixes)
+            self.z[self.L] = self.updateLastZ()
+            self.beta *= 1.05
+            self.gamma *= 1.05
+        #    self.calEnergy()
+
+    def updateW(self, i,idmatrixes):
+        aT = self.a[i-1].T
+        pinva = faster_inverse(aT.dot(self.a[i-1]),idmatrixes[2]).dot(aT)
+        return self.z[i].dot(pinva)
+
+    def updateA(self,i,idmatrixes):
+        wT = self.w[i+1].T
+        #tmp = np.linalg.solve(self.beta * (wT.dot(self.w[i+1]) + self.gamma*idmatrixes[i-1]), idmatrixes[i-1])
+        tmp = faster_inverse(self.beta * (wT.dot(self.w[i+1]) + self.gamma*idmatrixes[i-1]), idmatrixes[i-1])
+        return tmp.dot(self.beta * wT.dot(self.z[i + 1]) + self.gamma * self.actfun(self.z[i]))
+
+    def updateZ(self,i):
+        aw = self.w[i].dot(self.a[i - 1])
+
+        z_s = np.copy(aw)
+        z_s[z_s > 0] = 0
+        l_s = self.regularElementWiseCost(self.beta,self.gamma, self.a[i], aw, z_s)
+
+        z_b = (self.gamma * self.a[i] + self.beta * z_s) / (self.beta + self.gamma)
+        z_b[z_b < 0] = 0
+        l_b = self.regularElementWiseCost(self.beta, self.gamma, self.a[i], aw, z_b)
+
+        z_s[l_s > l_b] = z_b[l_s > l_b]
+
+        return z_s
+
+    def updateLastZ(self):
+        awL = self.w[self.L].dot(self.a[self.L-1])
+        zL = np.zeros(awL.shape)
+
+        zL_b = np.copy(awL)
+        zL_b[zL_b < 1] = 1
+        lL_b = self.outputElementWiseCost(self.beta, awL, zL_b, self.y, 1)
+
+        zL_s = np.copy(awL + 1 / (2 * self.beta))
+        zL_s[zL_s > 1] = 1
+        lL_s = self.outputElementWiseCost(self.beta, awL, zL_s, self.y, 1)
+
+        zL_s[lL_s > lL_b] = zL_b[lL_s > lL_b]
+        zL[self.y == 1] = zL_s[self.y == 1]
+
+        zL_s = np.copy(awL)
+        zL_s[zL_s > 0] = 0
+        lL_s = self.outputElementWiseCost(self.beta, awL, zL_s, self.y, 0)
+
+        zL_b = np.copy(awL - 1 / (2 * self.beta))
+        zL_b[zL_b < 0] = 0
+        lL_b = self.outputElementWiseCost(self.beta, awL, zL_b, self.y, 0)
+
+        zL_s[lL_s > lL_b] = zL_b[lL_s > lL_b]
+        zL[self.y == 0] = zL_s[self.y == 0]
+
+        return zL
+
+    def hingeLossElementWiseCost(self, z, y, isOne):
+        """ Evaluate Hinge Loss """
+        zn = np.copy(z)
+        x = np.zeros(z.shape)
+        if not isOne:
+            zn[y == 0] = np.maximum(zn, x)[y == 0]
+        else:
+            zn[y == 1] = np.maximum(1 - zn, x)[y == 1]
+        return zn
+
+    def outputElementWiseCost(self, beta, aw, z, y, isOne):
+        return self.hingeLossElementWiseCost(z, y, isOne) + beta * (z - aw) ** 2
+
+    def actfun(self,z):
+        xn = np.copy(z)
+        xn[xn < 0] = 0
+        return xn
+
+    def regularElementWiseCost(self, beta, gamma, a, aw, z):
+        """ Calculate elementwise cost """
+        return gamma * (a - self.actfun(z)) ** 2 + beta * (z - aw) ** 2
+
+    def getY(self,a3):
+        m, n = a3.shape
+        y = zeros((n, 1), dtype=int)
+        for i in range(n):
+            y[i] = np.argmax(a3[:, i])
+        return y
+
+    def predict(self):
+        a0,labels,y = self.loadmnist("testing")
+        result = self.w[3].dot(self.actfun(self.w[2].dot(self.actfun(self.w[1].dot(a0)))))
+        result_labels = self.getY(result)
+        count = 0
+        # print(result_labels)
+        # print(labels)
+        for i in range(len(labels)) :
+            if(result_labels[i]==labels[i]):
+                count += 1
+        print count*1.0/self.testnum
+
+    def getW(self):
+        return self.w
+
+    def lossfun(self):
+        tmp = np.zeros((10,self.trainnum))
+        z = self.w[3].dot(self.actfun(self.w[2].dot(self.actfun(self.w[1].dot(self.a[0])))))
+        x = np.zeros(z.shape)
+        tmp[self.y==1] = np.maximum(1-z,x)[self.y==1]
+        tmp[self.y==0] = np.maximum(z,x)[self.y==0]
+
+    def calEnergy(self):
+        self.losscost.append(self.lossfun())
+        self.w1.append(sum(sum((self.z[1]-self.w[1].dot(self.a[0]))**2)))
+        self.w2.append(sum(sum((self.z[2]-self.w[2].dot(self.a[1]))**2)))
+        self.w3.append(sum(sum((self.z[3]-self.w[3].dot(self.a[2]))**2)))
+        self.act2.append(sum(sum((self.a[2]-self.actfun(self.z[2]))**2)))
+        self.act1.append(sum(sum((self.a[1]-self.actfun(self.z[1]))**2)))
+        return 0
+
+    def getEnergy(self):
+        return self.w1,self.w2,self.w3,self.act1,self.act2
 
 
-	y = zeros((10,N),dtype=uint8)
-	print(labels)
-	for i in range(N):
-		y[labels[i],i] = 1
+    def trainByBP(self):
+        for i in range(self.itnum):
+            self.propagate()
+            self.backPropagate()
 
-	return re_img, y
+    def propagate(self):
+        for i in range(1,self.L):
+            self.z[i] = self.w[i].dot(self.a[i-1])
+            self.a[i] = self.actfun(self.z[i])
 
-def actFun(z):
-	tmp = z>=1
-	z[tmp] = 1
-	tmp = z<=0
-	z[tmp] = 0
-	return z
+            tmp = np.zeros(self.z[i].shape)
+            tmp[self.z[i]>0] = 1
+            self.gradz[i] = tmp
 
-def getY(a3):
-	m,n = a3.shape
-	y = zeros((n,1),dtype=int)
-	for i in range(n):
-		y[i] = np.argmax(a3[:,i])
-	return y
+            self.gradw[i] = self.a[i-1]
 
-def updateW(z,a):
-	return z.dot(np.linalg.pinv(a))
+            self.grada[i] = self.w[i+1].T
 
-def updateA(beta,w,gama,z,z_p):
-	m,n = w.shape
-	I = np.identity(n)
-	tmp = np.linalg.inv(beta*w.T.dot(w)+gama*I)
-	a = tmp.dot(beta*(w.T.dot(z))+gama*actFun(z_p))
-	return a
+        self.z[self.L] = self.w[self.L].dot(self.a[self.L-1])
+        self.gradw[self.L] = self.a[self.L-1]
 
-def updateZ(gama,a_c,beta,w,a_p):
-	result = w.dot(a_p)
-	m,n = result.shape
-	z = zeros((m,n),dtype=np.float64)
-	can_z = zeros((3,1),dtype=np.float64)
-	for i in range(m):
-		for j in range(n):
-			if result[i,j]>=1:
-				can_z[0] = result[i,j]
-				can_z[1] = (gama*a_c[i,j]+beta*result[i,j])/(gama+beta)
-				can_z[2] = 0
-			elif result[i,j]<=0:
-				can_z[0] = 1
-				can_z[1] = (gama*a_c[i,j]+beta*result[i,j])/(gama+beta)
-				can_z[2] = result[i,j]
-			else:
-				can_z[0] = 1
-				can_z[1] = result[i,j]
-				can_z[2] = 0
+    def backPropagate(self):
+        tmp = 1
+        for i in range(self.L,0,-1):
+            tmp = tmp * self.gradw[i]
+            self.w[i] = self.w[i] - self.stepsize * tmp
 
-			if (can_z[1]>=1) or (can_z[1]<=0):
-				can_z[1] = can_z[0]
 
-			energy = zeros((3,1),dtype=np.float64)
-			for k in range(3):
-				if can_z[k]<=0:
-					tmp = 0
-				elif can_z[k]>=1:
-					tmp = 1
-				else:
-					tmp = can_z[k]
-				energy[k] = beta*pow((can_z[k]-result[i,j]),2) + gama *pow((a_c[i,j]-tmp),2)
 
-			z[i,j] = can_z[np.argmin(energy)]
+neurons = [784,1000,1500,10]
+trainnum = 300
+testnum = 500
+itnum = 20
+stepsize = 0.1
+nn = NeuralNetwork(3,neurons,trainnum,testnum,itnum,stepsize,0.01)
+nn.trainByADMM()
+nn.predict()
+#w1,w2,w3,act1,act2 = nn.getEnergy()
 
-	return z
-
-def calLastEn(z,beta,const):
-	if z>0:
-		tmp = z
-	else:
-		tmp = 0
-	return tmp+beta*pow(z-const,2)
-
-def updateLastZ(y,beta,w,a):
-	m,n = y.shape
-	result = w.dot(a) 
-	z = zeros((m,n),dtype=np.float64)
-	for i in range(m):
-		for j in range(n):
-			if y[i,j]==0:
-				if result[i,j]<=0:
-					z[i,j] = result[i,j]
-				else:
-					can_z = np.array([0.,0.]) 
-					can_z[0] = -1/2/beta + result[i,j]
-					can_z[1] = 0
-					if calLastEn(can_z[0],beta,result[i,j])<calLastEn(can_z[1],beta,result[i,j]):
-						z[i,j] = can_z[0]
-					else:
-						z[i,j] = can_z[1]
-			else:
-				if result[i,j]>=1:
-					z[i,j] = result[i,j]
-				else:
-					can_z = np.array([0.,0.])
-					can_z[0] = 1/2/beta + result[i,j]
-					can_z[1] = 0
-					if calLastEn(1-can_z[0],beta,reulst[i,j])<calLastEn(1-can_z[1],beta,result[i,j]):
-						z[i,j] = can_z[0]
-					else:
-						z[i,j] = can_z[1]
-	
-	return z
-
-def lossFun(z,y):
-	m,n = z.shape
-	result = zeros((m,n),dtype=np.float64)
-	for i in range(m):
-		for j in range(n):
-			if y[i,j] == 0:
-				result[i,j] = max(z[i,j],0)
-			else:
-				result[i,j] = max(1-z[i,j],0)
-				
-	return sum(sum(result))
-
-def calEnergy(w,a,z,y,beta,gama):
-	energy = 0
-	energy += lossFun(z[3],y)
-	tmp = sum(sum((z[3]-w[3].dot(a[2]))**2))
-	energy += beta*tmp
-	for i in range(1,3):
-		tmp = sum(sum((a[i]-actFun(z[i]))**2))
-		energy += gama*tmp
-		tmp = sum(sum((z[i]-w[i].dot(a[i-1]))**2))
-		energy += beta*tmp
-	return energy
-
-a0, y = load_mnist()
-w = list()
-z = list()
-a = list()
-gama = 10
-beta = 1
-a.append(a0)
-w.append(0)
-z.append(0)
-w.append(np.ones((FIRST_LAYER,SIZE),dtype=np.float64))
-w.append(np.ones((SEC_LAYER,FIRST_LAYER),dtype=np.float64))
-w.append(np.ones((10,SEC_LAYER),dtype=np.float64))
-z.append(w[1].dot(a[0]))
-a.append(actFun(z[1]))
-z.append(w[2].dot(a[1]))
-a.append(actFun(z[2]))
-z.append(w[3].dot(a[2]))
-
-print("a: ", len(a),a[0].shape,a[1].shape,a[2].shape)
-print("w: ", len(w),w[1].shape,w[2].shape,w[3].shape)
-print("z: ", len(z),z[1].shape,z[2].shape,z[3].shape)
-
-for i in range(50):
-	for l in range(1,3):
-		w[l] = updateW(z[l],a[l-1])
-		a[l] = updateA(beta,w[l+1],gama,z[l+1],z[l])
-		z[l] = updateZ(gama,a[l],beta,w[l],a[l-1])
-
-	w[3] = updateW(z[3],a[2])
-	z[3] = updateLastZ(y,beta,w[3],a[2])
-	y_train = getY(z[3])
-	beta = beta*1.05
-	gama = gama*1.05
-	
-	print(calEnergy(w,a,z,y,beta,gama))
+'''
+plt.figure(1)
+plt.plot(w1)
+plt.figure(2)
+plt.plot(w2)
+plt.figure(3)
+plt.plot(w3)
+plt.figure(4)
+plt.plot(act1)
+plt.figure(5)
+plt.plot(act2)
+'''
+plt.show()

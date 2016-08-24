@@ -8,7 +8,7 @@ from NeuralNetwork.admm import *
 def getStatistics(Xtr, Ytr, Xte, Yte, weightConsWeight, activConsWeight, iterNum, epsilon):
     # Initialize a 3-layer neural network with specified neuron dimension, 
     # the first dim is determined by the size of input dataset
-    neuronDim = [0, 100, 150]
+    neuronDim = [0, 1000, 1500]
     network = NeuralNetwork(3, neuronDim)
     classNum = 10
     
@@ -47,7 +47,7 @@ def miniPatchTest(trNum, teNum):
     activConsWeight = 10
     iterNum = 20
     epsilon = 0.01
-    getStatistics(Xtr, Ytr, Xtr, Ytr, weightConsWeight, activConsWeight, iterNum, epsilon)
+    getStatistics(Xtr, Ytr, Xte, Yte, weightConsWeight, activConsWeight, iterNum, epsilon)
  
 
 # Main thread
@@ -55,8 +55,8 @@ def miniPatchTest(trNum, teNum):
 mnistDir = "NeuralNetwork/MnistData"
 X_train,Y_train,X_test,Y_test = getMnistData(mnistDir)
 
-train = np.array([10]) # Trainning amount array
+train = np.array([300]) # Trainning amount array
 for i in train:
     print "Training data: ", i
-    miniPatchTest(i,10)
+    miniPatchTest(i,500)
 
