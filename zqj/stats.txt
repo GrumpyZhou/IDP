@@ -1,0 +1,53 @@
+Wed Aug 24 21:47:49 2016    main.profile
+
+         16602 function calls (16481 primitive calls) in 0.592 seconds
+
+   Ordered by: cumulative time
+   List reduced from 595 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        2    0.001    0.001    0.594    0.297 main.py:1(<module>)
+        5    0.136    0.027    0.314    0.063 __init__.py:1(<module>)
+        1    0.050    0.050    0.307    0.307 data_utils.py:5(getMnistData)
+      224    0.223    0.001    0.223    0.001 {method 'astype' of 'numpy.ndarray' objects}
+        1    0.003    0.003    0.181    0.181 __init__.py:106(<module>)
+        1    0.000    0.000    0.161    0.161 add_newdocs.py:10(<module>)
+        1    0.000    0.000    0.152    0.152 type_check.py:3(<module>)
+        1    0.000    0.000    0.098    0.098 main.py:29(miniPatchTest)
+        1    0.000    0.000    0.098    0.098 main.py:8(getStatistics)
+        1    0.009    0.009    0.097    0.097 admm.py:14(train)
+        2    0.000    0.000    0.034    0.017 data_utils.py:17(read)
+        4    0.034    0.008    0.034    0.008 {numpy.core.multiarray.fromfile}
+      246    0.027    0.000    0.027    0.000 {method 'dot' of 'numpy.ndarray' objects}
+       40    0.025    0.001    0.026    0.001 linalg.py:458(inv)
+       60    0.002    0.000    0.023    0.000 linalg.py:1551(pinv)
+       60    0.017    0.000    0.018    0.000 linalg.py:1254(svd)
+        1    0.000    0.000    0.011    0.011 __init__.py:7(<module>)
+        1    0.006    0.006    0.007    0.007 __init__.py:88(<module>)
+        2    0.001    0.001    0.007    0.004 __init__.py:45(<module>)
+        1    0.000    0.000    0.005    0.005 decorators.py:15(<module>)
+
+
+=====================  Callers ====================
+   Ordered by: cumulative time
+   List reduced from 595 to 10 due to restriction <10>
+
+Function                                      was called by...
+                                                  ncalls  tottime  cumtime
+main.py:1(<module>)                           <-       1    0.000    0.002  __init__.py:45(<module>)
+__init__.py:1(<module>)                       <-       2    0.002    0.003  __init__.py:106(<module>)
+                                                       1    0.002    0.159  add_newdocs.py:10(<module>)
+                                                       1    0.000    0.000  main.py:1(<module>)
+                                                       1    0.131    0.152  type_check.py:3(<module>)
+data_utils.py:5(getMnistData)                 <-       1    0.050    0.307  main.py:1(<module>)
+{method 'astype' of 'numpy.ndarray' objects}  <-       4    0.223    0.223  data_utils.py:5(getMnistData)
+                                                      40    0.000    0.000  linalg.py:458(inv)
+                                                     180    0.000    0.000  linalg.py:1254(svd)
+__init__.py:106(<module>)                     <-       1    0.003    0.181  main.py:1(<module>)
+add_newdocs.py:10(<module>)                   <-       1    0.000    0.161  __init__.py:106(<module>)
+type_check.py:3(<module>)                     <-       1    0.000    0.152  __init__.py:1(<module>)
+main.py:29(miniPatchTest)                     <-       1    0.000    0.098  main.py:1(<module>)
+main.py:8(getStatistics)                      <-       1    0.000    0.098  main.py:29(miniPatchTest)
+admm.py:14(train)                             <-       1    0.009    0.097  main.py:8(getStatistics)
+
+
