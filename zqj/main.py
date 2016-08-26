@@ -8,7 +8,7 @@ from NeuralNetwork.admm import *
 def getStatistics(Xtr, Ytr, Xte, Yte, weightConsWeight, activConsWeight, iterNum, epsilon):
     # Initialize a 3-layer neural network with specified neuron dimension, 
     # the first dim is determined by the size of input dataset
-    neuronDim = [0, 1000, 1500]
+    neuronDim = [0, 300, 500]
     network = NeuralNetwork(3, neuronDim)
     classNum = 10
     

@@ -1,49 +1,51 @@
-Wed Aug 24 22:31:20 2016    main.profile
+Wed Aug 24 22:46:10 2016    main.profile
 
-         11759 function calls (11671 primitive calls) in 3.244 seconds
+         16497 function calls (16409 primitive calls) in 29.526 seconds
 
    Ordered by: cumulative time
-   List reduced from 500 to 20 due to restriction <20>
+   List reduced from 511 to 20 due to restriction <20>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        2    0.007    0.004    3.246    1.623 main.py:1(<module>)
-        1    0.010    0.010    2.679    2.679 main.py:29(miniPatchTest)
-        1    0.000    0.000    2.669    2.669 main.py:8(getStatistics)
-        1    0.035    0.035    2.668    2.668 admm.py:14(train)
-        1    1.919    1.919    1.919    1.919 linalg.py:454(inv)
-        1    0.037    0.037    0.463    0.463 data_utils.py:5(getMnistData)
-        1    0.000    0.000    0.451    0.451 linalg.py:1513(pinv)
-        1    0.445    0.445    0.446    0.446 linalg.py:1219(svd)
-        7    0.285    0.041    0.285    0.041 {method 'astype' of 'numpy.ndarray' objects}
-        2    0.000    0.000    0.142    0.071 data_utils.py:17(read)
-        4    0.140    0.035    0.140    0.035 {numpy.core.multiarray.fromfile}
-        6    0.136    0.023    0.136    0.023 {method 'dot' of 'numpy.ndarray' objects}
-        4    0.113    0.028    0.113    0.028 {method 'randn' of 'mtrand.RandomState' objects}
-        1    0.003    0.003    0.092    0.092 __init__.py:106(<module>)
-        4    0.010    0.002    0.061    0.015 __init__.py:1(<module>)
-        1    0.000    0.000    0.042    0.042 add_newdocs.py:10(<module>)
-        1    0.001    0.001    0.030    0.030 __init__.py:15(<module>)
-        1    0.000    0.000    0.025    0.025 type_check.py:3(<module>)
-        3    0.009    0.003    0.013    0.004 admm.py:170(neuronReLU)
-        1    0.001    0.001    0.008    0.008 __init__.py:7(<module>)
+        2    0.002    0.001   29.529   14.764 main.py:1(<module>)
+        1    0.009    0.009   29.078   29.078 main.py:29(miniPatchTest)
+        1    0.002    0.002   29.069   29.069 main.py:8(getStatistics)
+        1    0.388    0.388   29.047   29.047 admm.py:14(train)
+       60    0.037    0.001   21.882    0.365 linalg.py:1513(pinv)
+       60   21.606    0.360   21.635    0.361 linalg.py:1219(svd)
+       40    5.877    0.147    5.886    0.147 linalg.py:454(inv)
+      246    0.651    0.003    0.651    0.003 {method 'dot' of 'numpy.ndarray' objects}
+        1    0.036    0.036    0.328    0.328 data_utils.py:5(getMnistData)
+      224    0.287    0.001    0.287    0.001 {method 'astype' of 'numpy.ndarray' objects}
+       60    0.207    0.003    0.207    0.003 {numpy.core._dotblas.dot}
+       80    0.098    0.001    0.153    0.002 admm.py:166(regularElementWiseCost)
+        1    0.003    0.003    0.116    0.116 __init__.py:106(<module>)
+      124    0.091    0.001    0.109    0.001 admm.py:170(neuronReLU)
+        4    0.015    0.004    0.080    0.020 __init__.py:1(<module>)
+        1    0.000    0.000    0.058    0.058 add_newdocs.py:10(<module>)
+        2    0.000    0.000    0.040    0.020 data_utils.py:17(read)
+        4    0.039    0.010    0.039    0.010 {numpy.core.multiarray.fromfile}
+        1    0.004    0.004    0.038    0.038 __init__.py:15(<module>)
+      364    0.001    0.000    0.035    0.000 function_base.py:786(copy)
 
 
 =====================  Callers ====================
    Ordered by: cumulative time
-   List reduced from 500 to 10 due to restriction <10>
+   List reduced from 511 to 10 due to restriction <10>
 
 Function                                      was called by...
                                                   ncalls  tottime  cumtime
 main.py:1(<module>)                           <-       1    0.000    0.001  __init__.py:45(<module>)
-main.py:29(miniPatchTest)                     <-       1    0.010    2.679  main.py:1(<module>)
-main.py:8(getStatistics)                      <-       1    0.000    2.669  main.py:29(miniPatchTest)
-admm.py:14(train)                             <-       1    0.035    2.668  main.py:8(getStatistics)
-linalg.py:454(inv)                            <-       1    1.919    1.919  admm.py:14(train)
-data_utils.py:5(getMnistData)                 <-       1    0.037    0.463  main.py:1(<module>)
-linalg.py:1513(pinv)                          <-       1    0.000    0.451  admm.py:14(train)
-linalg.py:1219(svd)                           <-       1    0.445    0.446  linalg.py:1513(pinv)
-{method 'astype' of 'numpy.ndarray' objects}  <-       4    0.284    0.284  data_utils.py:5(getMnistData)
-                                                       3    0.001    0.001  linalg.py:1219(svd)
-data_utils.py:17(read)                        <-       2    0.000    0.142  data_utils.py:5(getMnistData)
+main.py:29(miniPatchTest)                     <-       1    0.009   29.078  main.py:1(<module>)
+main.py:8(getStatistics)                      <-       1    0.002   29.069  main.py:29(miniPatchTest)
+admm.py:14(train)                             <-       1    0.388   29.047  main.py:8(getStatistics)
+linalg.py:1513(pinv)                          <-      60    0.037   21.882  admm.py:14(train)
+linalg.py:1219(svd)                           <-      60   21.606   21.635  linalg.py:1513(pinv)
+linalg.py:454(inv)                            <-      40    5.877    5.886  admm.py:14(train)
+{method 'dot' of 'numpy.ndarray' objects}     <-     243    0.636    0.636  admm.py:14(train)
+                                                       3    0.015    0.015  admm.py:135(predict)
+data_utils.py:5(getMnistData)                 <-       1    0.036    0.328  main.py:1(<module>)
+{method 'astype' of 'numpy.ndarray' objects}  <-       4    0.252    0.252  data_utils.py:5(getMnistData)
+                                                      40    0.007    0.007  linalg.py:454(inv)
+                                                     180    0.027    0.027  linalg.py:1219(svd)
 
 
