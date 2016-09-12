@@ -35,17 +35,18 @@ class NeuralNetwork():
         # - w[]: weight list for each layer  [0, w1, w2, w3]: w1(Dim[0],Dim[1]), w2(Dim[1],Dim[2]), w3(Dim[2],C)
         w = [np.zeros((0)), epsilon*np.random.randn(Dim[0], Dim[1]), epsilon*np.random.randn(Dim[1], Dim[2]), epsilon*np.random.randn(Dim[2], C)]
 
-        #a = [Xtr, epsilon*np.random.randn(N, Dim[1]), epsilon*np.random.randn(N, Dim[2])] # whether to vectorize
-        a = [Xtr]
-        z = [0, Xtr.dot(w[1]) ]
+        a = [Xtr, epsilon*np.random.randn(N, Dim[1]), epsilon*np.random.randn(N, Dim[2])] # whether to vectorize
+        z = [np.zeros((0)), epsilon*np.random.randn(N, Dim[1]), epsilon*np.random.randn(N, Dim[2]), epsilon*np.random.randn(N, C)]
+        
+        #a = [Xtr]
+        #z = [0, Xtr.dot(w[1]) ]
 
-        a.append(self.neuronReLU(z[1]))
-        z.append(a[1].dot(w[2]))
+        #a.append(self.neuronReLU(z[1]))
+        #z.append(a[1].dot(w[2]))
 
-        a.append(self.neuronReLU(z[2]))
-        z.append(a[2].dot(w[3]))
+        #a.append(self.neuronReLU(z[2]))
+        #z.append(a[2].dot(w[3]))
 
-        # z = [np.zeros((0)), epsilon*np.random.randn(N, Dim[1]), epsilon*np.random.randn(N, Dim[2]), epsilon*np.random.randn(N, C)]
 
 
         # - beta,gama: penalty coefficiencies
@@ -60,6 +61,7 @@ class NeuralNetwork():
             # Walk through L-layer network
             for l in range(1, L):
                 w[l] = np.linalg.pinv(a[l-1]).dot(z[l])
+                # Parallel Weight Update
                 wNtr = w[l+1].T
                 a[l] = (beta * z[l+1].dot(wNtr) + gamma * self.neuronReLU(z[l])).dot(np.linalg.inv(beta * (w[l+1].dot(wNtr) + gamma * np.identity(wNtr.shape[1]))))
                                 

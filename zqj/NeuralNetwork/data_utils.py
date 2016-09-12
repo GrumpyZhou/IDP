@@ -9,10 +9,9 @@ def getMnistData(path):
     Xtr.astype("float")
     Ytr.astype("float")
     Xte.astype("float")
-    Yte.astype("float")
-    
-    return Xtr,Ytr,Xte,Yte
+    Yte.astype("float") 
 
+    return Xtr,Ytr,Xte,Yte
 
 def read(dataset = "training", path="."):
 
