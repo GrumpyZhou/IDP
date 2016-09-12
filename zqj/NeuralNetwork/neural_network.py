@@ -28,7 +28,7 @@ class NeuralNetwork():
         self.b2 = [0]
         self.b3 = [0]
         self.lossL = [0]
-        print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
+        #print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
         
         
     def initNetwork(self, trainNum, classNum, hiddenLayer, epsilon):
@@ -76,8 +76,8 @@ class NeuralNetwork():
             # Walk through 1~L-1 layer network
             for l in range(1, L):
                 # w update solve ||Wa-z||^2
-                w[l] = np.linalg.lstsq(a[l-1].T,z[l].T)[0].T
-                #w[l] = z[l].dot(np.linalg.pinv(a[l-1]))
+                #w[l] = np.linalg.lstsq(a[l-1].T,z[l].T)[0].T
+                w[l] = z[l].dot(np.linalg.pinv(a[l-1]))
                
                 # a update
                 wNtr = w[l+1].T
@@ -101,8 +101,8 @@ class NeuralNetwork():
             
             # L-layer
             # w update
-            w[L] = np.linalg.lstsq(a[L-1].T,z[L].T)[0].T            
-            #w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
+            #w[L] = np.linalg.lstsq(a[L-1].T,z[L].T)[0].T            
+            w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
             
             # z update 
             waL = w[L].dot(a[L-1])
@@ -110,12 +110,12 @@ class NeuralNetwork():
 
             # y_i = 1
             # zi > 1
-            zL_b = np.copy(waL) # - Lambda / (2 * beta)
+            zL_b = np.copy(waL) - Lambda / (2 * beta)
             zL_b[zL_b < 1] = 1
             lossL_b = self.outputCost(beta, waL, zL_b, y, 1, Lambda)
             
             # zi < 1
-            zL_s = waL +  1 / (2 * beta) # (1 - Lambda) / (2 * beta)
+            zL_s = waL +  (1 - Lambda) / (2 * beta)
             zL_s[zL_s > 1] = 1
             lossL_s = self.outputCost(beta, waL, zL_s, y, 1, Lambda)
             
@@ -124,12 +124,12 @@ class NeuralNetwork():
 
             # y_i = 0
             # zi < 0
-            zL_s = np.copy(waL) # - Lambda / (2 * beta)
+            zL_s = np.copy(waL) - Lambda / (2 * beta)
             zL_s[zL_s > 0] = 0
             lossL_s = self.outputCost(beta, waL, zL_s, y, 0, Lambda)
 
             # zi > 0
-            zL_b = waL -  1 / (2 * beta) # (1 + Lambda) / (2 * beta)
+            zL_b = waL - (1 + Lambda) / (2 * beta)
             zL_b[zL_b < 0] = 0
             lossL_b = self.outputCost(beta, waL, zL_b, y, 0, Lambda)
                 
@@ -147,17 +147,19 @@ class NeuralNetwork():
             beta *= 1.05
             gamma *= 1.05
             
-            # DEBUG: loss
+            """ DEBUG: loss
             self.g1.append(np.sum(gamma * (a[1] - self.ReLU(z[1])) ** 2))
             self.g2.append(np.sum(gamma * (a[2] - self.ReLU(z[2])) ** 2))
             self.b1.append(np.sum(beta * (z[1] - w[1].dot(a[0])) ** 2))
             self.b2.append(np.sum(beta * (z[2] - w[2].dot(a[1])) ** 2))
             self.b3.append(np.sum(beta * (z[L] - w[L].dot(a[L-1])) ** 2))
+            """
             
-
             
         # Save the W to network
         self.W = w
+
+        
 
         
     def predict(self, Xte):
@@ -170,7 +172,7 @@ class NeuralNetwork():
         """
         w = self.W
         y = w[3].dot(self.ReLU(w[2].dot(self.ReLU(w[1].dot(Xte)))))
-        print y.shape
+        #print y[:, xrange(2)]
         return  np.argmax(y, axis=0)
 
 
@@ -183,7 +185,7 @@ class NeuralNetwork():
 
 
     def outputCost(self, beta, wa, z, y, isOne, Lambda):
-        return self.hingeLoss(z, y, isOne) + beta * (z - wa) ** 2 #+ z * Lambda
+        return self.hingeLoss(z, y, isOne) + beta * (z - wa) ** 2 + z * Lambda
 
 
     def quadraCost(self, beta, gamma, a, wa, z):
@@ -207,7 +209,7 @@ class NeuralNetwork():
         else:
             zn[y == 1] = np.maximum(1-zn,x)[y == 1]
 
-        self.lossL.append(np.sum(zn)) #...
+        self.lossL.append(np.sum(zn))
         return zn
 
 
