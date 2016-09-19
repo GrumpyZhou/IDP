@@ -2,9 +2,9 @@ import numpy as np
 import os, struct
 from array import array as pyarray
 from numpy import append, array, int8, uint8, zeros
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from numpy.linalg import lapack_lite
-
+'''
 lapack_routine = lapack_lite.dgesv
 
 def faster_inverse(A,idmatrix):
@@ -22,7 +22,7 @@ def faster_inverse(A,idmatrix):
 		return b
 
 	return array(lapack_inverse(A))
-
+'''
 class NeuralNetwork():
 
 	def __init__(self, layers, neurons, trainnum, testnum, iternum, epsilon):
@@ -31,9 +31,9 @@ class NeuralNetwork():
 		self.trainnum = trainnum
 		self.itnum = iternum
 		self.testnum = testnum
-		self.beta = 1
-		self.gamma = 10 
-		self.lossType = "Mean Square"
+		self.beta = 1.0
+		self.gamma = 10.0 
+		self.lossType = "Softmax"
 		self.actType = "ReLu"
 		self.losscost = list()
 		self.act1 = list()
@@ -89,6 +89,7 @@ class NeuralNetwork():
 		re_img = np.zeros((784,N),dtype=np.float64)
 		for i in range(N):
 			re_img[:,i] = images[i,:,:].reshape(784)
+		re_img = re_img/255;
 
 		y = np.zeros((10,N),dtype=uint8)
 		for i in range(len(labels)):
@@ -117,7 +118,11 @@ class NeuralNetwork():
 			#print self.mylambda.shape
 			self.beta *= 1.05
 			self.gamma *= 1.05
-			self.calEnergy()
+			#self.calEnergy()
+
+	#	print self.mylambda
+#		print '-------------------------'
+#		print self.z[self.L]
 
 	def updateW(self, i, idmatrixes):
 		#aT = self.a[i-1].T
@@ -145,8 +150,11 @@ class NeuralNetwork():
 
 	def updateLastZ(self):
 		if self.lossType == "Mean Square":
-			#print self.y
 			self.z[self.L] = (self.y*1.0+self.beta*self.w[self.L].dot(self.a[self.L-1])-self.mylambda*1.0/2)*1.0/(1+self.beta)
+		elif self.lossType == "Softmax":
+			#print 1
+			self.z[self.L] = (2*self.beta*self.w[self.L].dot(self.a[self.L-1])-self.mylambda)/(1+2*self.beta)
+			self.z[self.L][self.y==1] += 1 / (1+2*self.beta)
 		return 0
 
 	def hingeLossElementWiseCost(self,z,y,isOne):
@@ -178,7 +186,7 @@ class NeuralNetwork():
 		return y
 
 	def predict(self):
-		a0,labels,y = self.loadmnist("testing")
+		a0,labels,y = self.loadmnist("training")
 		a = list()
 		z = list()
 		a.append(a0)
@@ -199,6 +207,8 @@ class NeuralNetwork():
 	def lossfun(self):
 		if self.lossType == "Mean Square":
 			return np.sum((self.z[self.L]-self.y)**2)*1.0/self.trainnum
+		elif self.lossType == "Softmax":
+			return np.sum(np.exp(self.z[self.L][self.y==1])/np.sum(np.exp(self.z[self.L]),axis=0))/self.trainnum
 	
 	def calEnergy(self):
 		self.losscost.append(self.lossfun())
@@ -210,16 +220,17 @@ class NeuralNetwork():
 		return self.w1,self.w2,self.act1,self.losscost
 
 neurons = [784,300,10]
-trainnum = 60000
-testnum = 10000
+trainnum = 1000
+testnum = 1000
 itnum = 40
 stepsize = 0.1
-nn = NeuralNetwork(2,neurons,trainnum,testnum,itnum,0.000005)
+epsilon = 0.00001
+nn = NeuralNetwork(2,neurons,trainnum,testnum,itnum,epsilon)
 nn.train()
 nn.predict()
 w1,w2,act1,losscost = nn.getEnergy();
 
-
+'''
 plt.figure(1)
 plt.plot(w1)
 plt.figure(2)
@@ -229,4 +240,4 @@ plt.plot(act1)
 plt.figure(4)
 plt.plot(losscost)
 plt.show()
-
+'''
