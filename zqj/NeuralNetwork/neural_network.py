@@ -22,7 +22,11 @@ class NeuralNetwork():
         self.hiddenLayer = hiddenLayer
         self.epsilon = epsilon
         self.W = []
-        self.loss = []
+        self.dataLoss = []
+        self.quadraLoss = []
+        for l in range(0,len(self.hiddenLayer)+ 1):
+            self.quadraLoss.append([])
+
         print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
         
         
@@ -89,21 +93,22 @@ class NeuralNetwork():
             # zL update
             waL =  w[L].dot(a[L-1])
             """ lossType: hinge, msq, smx """
-            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq }
-            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda)
-            #z[L] = self.zLastUpdateWithHinge(beta, w[L].dot(a[L-1]), y, Lambda)  
-            #z[L] = self.zLastUpdateWithMeanSq(beta, waL, y, Lambda)
+            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
+            #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
+            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= 'prox', tau=0.01 , ite= 25)
+            
 
             # lambda update
             if hasLambda:
                Lambda += beta * (z[L] - waL)
             
             # Update beta, gamma
-            beta *= 1.05
-            gamma *= 1.05
+            beta *= 1
+            gamma *= 1
             
             # Calculate total loss
-            self.loss.append(self.totalLoss(beta, gamma, a, z, w, y, Lambda))
+            #self.totalLoss(beta, gamma, a, z, w, y, Lambda, lossType)
+                        
         
         # Save the W to network
         self.W = w
@@ -141,8 +146,57 @@ class NeuralNetwork():
         z_s[loss_s > loss_b] = z_b[loss_s > loss_b]
         
         return np.copy(z_s)
-    
-    def zLastUpdateWithHinge(self, beta, waL, y, Lambda):
+
+    def zLastUpdateWithSoftmax(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
+        zL = np.zeros(waL.shape)
+        if method == 'gd':
+           print method
+           zL = self.minZWithGD(beta, waL, y, Lambda, tau, ite)
+           
+        if method == 'prox':
+           zL = self.minZwithProx(beta, waL, y, Lambda, tau, ite)
+           
+        return zL
+
+    def minZwithProx(self, beta, waL, y, Lambda, tau, ite):
+        zL = np.copy(waL)    
+        
+        for i in range(ite):
+            #zL = np.zeros(waL.shape)
+            # calculate probabilities
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = zProb - y
+            v = zL - tau * (dLdz)
+
+            # update
+            zL = (2 * tau * beta * waL - tau * Lambda + v) / (1 + 2 * tau * beta)
+        return zL
+
+
+
+    def minZWithGD(self, beta, waL, y, Lambda, step, ite):
+        #zL = np.zeros(waL.shape)
+        zL = np.copy(waL)    
+        # minimize with gradient descent
+        for i in range(ite):
+            # calculate probabilities
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = zProb - y
+            dEdz = dLdz + Lambda + 2 * beta * (zL - waL)
+
+            # descent
+            zL = zL - step * dEdz
+        return zL
+
+
+    def zLastUpdateWithHinge(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
+
         zL = np.zeros(waL.shape)
         # y_i = 1
         # zi > 1
@@ -173,7 +227,7 @@ class NeuralNetwork():
         zL[y == 0] = zL_s[y == 0] 
         return zL
     
-    def zLastUpdateWithMeanSq(self, beta, waL, y, Lambda):
+    def zLastUpdateWithMeanSq(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
         return (y + beta * waL)/ (1 + beta) - 0.5 * Lambda / (1 + beta)
 
     def meanSqrLoss(self, z, y):
@@ -187,15 +241,23 @@ class NeuralNetwork():
         return y
 
 
-    def totalLoss(self, beta, gamma, a, z, w, y, Lambda):
+    def totalLoss(self, beta, gamma, a, z, w, y, Lambda, lossType):
         L = len(self.hiddenLayer) + 1
-        dataLoss = np.sum(self.hinge(z[L], y))
+        """ lossType: hinge, msq, smx """
+        dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
+        dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / self.trainNum
+        self.dataLoss.append(dataLoss)
+
         quadraLoss = np.sum(self.zQuadraLoss(beta, z[L], w[L].dot(a[L-1])))
+        self.quadraLoss[L-1].append(quadraLoss)
         lagraLoss = np.sum(z[L] * Lambda)
         for l in range(1,L):
-            quadraLoss += np.sum(self.quadraCost(beta, gamma, a[l], w[l].dot(a[l-1]), z[l]))
-        return dataLoss + quadraLoss + lagraLoss
-
+            tloss = np.sum(self.quadraCost(beta, gamma, a[l], w[l].dot(a[l-1]), z[l]))
+            self.quadraLoss[l-1].append(tloss)
+            #quadraLoss +=        
+        # return dataLoss, quadraLoss, lagraLoss
+    
+    
     def outputCost(self, beta, wa, z, y, isOne, Lambda): # can be improved
         return self.hingeLoss(z, y, isOne) + self.zQuadraLoss(beta, wa, z) + z * Lambda
 
@@ -219,6 +281,9 @@ class NeuralNetwork():
         loss[y == 0] = np.maximum(z,loss)[y == 0]
         loss[y == 1] = np.maximum(1-z,loss)[y == 1]
         return loss
+
+    def meanSqr(self, z, y):
+        return (z - y) ** 2
     
     def hingeLoss(self, z, y, isOne): # can be improved
         """ Evaluate Hinge Loss """
@@ -230,7 +295,11 @@ class NeuralNetwork():
             zn[y == 1] = np.maximum(1-zn,x)[y == 1]
         return zn
 
-    def multiSVMLoss(self, Spre,Ytrue):
-        """ Evaluate Multiclass SVM Loss """        
-        pass  
+    def softMax(self, z, y):
+        """ Evaluate Multiclass SVM Loss """ 
+        loss = np.zeros(y.shape)
+        zExp = np.exp(z) 
+        zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True) 
+        loss = -1 * y * np.log(zProb)
+        return loss
    
