@@ -74,7 +74,7 @@ class NeuralNetwork():
        # print "z:", self.z[1].shape, self.z[2].shape, self.z[3].shape
        # print "a:", self.a[0].shape, self.a[1].shape, self.a[2].shape
 
-    def loadmnist(self, dataset="training", digits=np.arange(10), path="/Users/kidsaga/Documents/TUM/program/IDP"):
+    def loadmnist(self, dataset="training", digits=np.arange(10), path="./"):
 
         '''
         load the mnist data
@@ -133,7 +133,7 @@ class NeuralNetwork():
             self.z[self.L] = self.updateLastZ()
             self.beta *= 1.05
             self.gamma *= 1.05
-        #    self.calEnergy()
+            self.calEnergy()
 
     def updateW(self, i,idmatrixes):
         aT = self.a[i-1].T
@@ -219,7 +219,7 @@ class NeuralNetwork():
         return y
 
     def predict(self):
-        a0,labels,y = self.loadmnist("testing")
+        a0,labels,y = self.loadmnist("training")
         result = self.w[3].dot(self.actfun(self.w[2].dot(self.actfun(self.w[1].dot(a0)))))
         result_labels = self.getY(result)
         count = 0
@@ -252,45 +252,16 @@ class NeuralNetwork():
     def getEnergy(self):
         return self.w1,self.w2,self.w3,self.act1,self.act2
 
-
-    def trainByBP(self):
-        for i in range(self.itnum):
-            self.propagate()
-            self.backPropagate()
-
-    def propagate(self):
-        for i in range(1,self.L):
-            self.z[i] = self.w[i].dot(self.a[i-1])
-            self.a[i] = self.actfun(self.z[i])
-
-            tmp = np.zeros(self.z[i].shape)
-            tmp[self.z[i]>0] = 1
-            self.gradz[i] = tmp
-
-            self.gradw[i] = self.a[i-1]
-
-            self.grada[i] = self.w[i+1].T
-
-        self.z[self.L] = self.w[self.L].dot(self.a[self.L-1])
-        self.gradw[self.L] = self.a[self.L-1]
-
-    def backPropagate(self):
-        tmp = 1
-        for i in range(self.L,0,-1):
-            tmp = tmp * self.gradw[i]
-            self.w[i] = self.w[i] - self.stepsize * tmp
-
-
-
-neurons = [784,1000,1500,10]
-trainnum = 300
+neurons = [784,100,150,10]
+trainnum = 5000
 testnum = 500
-itnum = 20
+itnum = 30
 stepsize = 0.1
 nn = NeuralNetwork(3,neurons,trainnum,testnum,itnum,stepsize,0.01)
 nn.trainByADMM()
 nn.predict()
-#w1,w2,w3,act1,act2 = nn.getEnergy()
+w1,w2,w3,act1,act2 = nn.getEnergy()
+print w3
 
 '''
 plt.figure(1)
