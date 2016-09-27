@@ -95,7 +95,7 @@ class NeuralNetwork():
             """ lossType: hinge, msq, smx """
             zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
             #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
-            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= 'prox', tau=0.01 , ite= 25)
+            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= 'prox', tau=0.001 , ite= 25)
             
 
             # lambda update
@@ -150,7 +150,6 @@ class NeuralNetwork():
     def zLastUpdateWithSoftmax(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
         zL = np.zeros(waL.shape)
         if method == 'gd':
-           print method
            zL = self.minZWithGD(beta, waL, y, Lambda, tau, ite)
            
         if method == 'prox':
