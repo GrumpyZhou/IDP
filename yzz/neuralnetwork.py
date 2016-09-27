@@ -2,7 +2,7 @@ import numpy as np
 import os, struct
 from array import array as pyarray
 from numpy import append, array, int8, uint8, zeros
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from numpy.linalg import lapack_lite
 '''
 lapack_routine = lapack_lite.dgesv
@@ -33,7 +33,7 @@ class NeuralNetwork():
 		self.testnum = testnum
 		self.beta = 1.0
 		self.gamma = 10.0 
-		self.lossType = "Softmax"
+		self.lossType = "Mean Square"
 		self.actType = "ReLu"
 		self.losscost = list()
 		self.act1 = list()
@@ -118,7 +118,7 @@ class NeuralNetwork():
 			#print self.mylambda.shape
 			self.beta *= 1.05
 			self.gamma *= 1.05
-			#self.calEnergy()
+			self.calEnergy()
 
 	#	print self.mylambda
 #		print '-------------------------'
@@ -219,18 +219,17 @@ class NeuralNetwork():
 	def getEnergy(self):
 		return self.w1,self.w2,self.act1,self.losscost
 
-neurons = [784,300,10]
-trainnum = 1000
-testnum = 1000
-itnum = 40
+neurons = [784,200,300,10]
+trainnum = 10
+testnum = 10
+itnum = 30
 stepsize = 0.1
-epsilon = 0.00001
-nn = NeuralNetwork(2,neurons,trainnum,testnum,itnum,epsilon)
+epsilon = 0.00000001
+nn = NeuralNetwork(3,neurons,trainnum,testnum,itnum,epsilon)
 nn.train()
 nn.predict()
 w1,w2,act1,losscost = nn.getEnergy();
 
-'''
 plt.figure(1)
 plt.plot(w1)
 plt.figure(2)
@@ -240,4 +239,3 @@ plt.plot(act1)
 plt.figure(4)
 plt.plot(losscost)
 plt.show()
-'''
