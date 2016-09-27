@@ -14,26 +14,50 @@
 
 \maketitle
 
-\section{Description of What We did}
+\section{Short sum up}
+Up till now, we have basically finished the first stage of our work on investigating and implementing the idea proposed by the paper.
+\subsection{Theoretical aspect}
+We have derived the formulas by ourselves. It turned out the algorithm is mathematically correct. The most ambiguous part should be the intuition of $\lambda$ and the way they work with it. 
+
+\subsection{Implementation aspect}
+The main obstacle we met with was that the Hinge loss function on the paper is not totally applicable for Mnist  because it is a multi-class dataset. Focusing on the issue we tried several different approaches. Altogether we implemented the program with hinge, mean square as well as softmax as loss function. We finally also decided to stick to hot-one representations of image labels for two reasons:
+1. It seems that it is not so unusual the method. According to the tutorial on tensor flow, they uses softmax and applied hot-one labels.
+2. Besides, the method provided us with a reasonable result already.
+
 \begin{description}
-\item[HingeLoss]
-We managed to use hinge loss as the loss function. Firstly, we divided the mnist dataset into two classses, which are even and odd, the result wasn't good. So we still used the hot 1 and trained the neural network with hinge loss. Finally, we can achieve a reasonable result.
+\item[Hinge Loss]
+When using Hinge loss, we also tried to divide the mnist dataset into two classses, which are even and odd, the result wasn't good. So we still stick to the hot 1 and trained the neural network with hinge loss. Finally, we can achieve a reasonable result.
 
 \item[Mean Square]
-When we used the mean square as the loss function, we found two interesting things. The $\lambda$ didn't play an important role but the $\epsilon$ which was used to initialize the weights had a big impact. Meanwhile, if we kept $\beta$ and $\gamma$ as same instead of updating them every iteration, the result will be better.
+When we used the mean square as the loss function, we found two interesting things. The $\lambda$ didn't play an important role but the $\epsilon$, which was used to initialize the weight matrix, had a big impact. Meanwhile, if we kept $\beta$ and $\gamma$ same instead of updating them every iteration, the result will be better.
 
 \item[Softmax]
-The problem of softmax when we use it as the loss function is for updating the z in last layer, we can't solve the minimizing problem with a linear system. So we tried to use gradient descent and proximal gradient to solve the subproblem. As same as the Mean square, keeping $\beta$ and $\gamma$ same can achieve a higher predict accuracy. 
-
+The main problem of using softmax as the loss function is that we can't solve the minimization problem to update z in last layer with a linear system. So we tried to use both gradient descent and proximal gradient to solve the subproblem. Both of them worked out and achieved reasonable results. As same as the Mean square, keeping $\beta$ and $\gamma$ same can achieve a higher predict accuracy. 
 \end{description}
 
-\section{Comparison of different parameters}
-\subsection{Comparison for different $\epsilon$}
+\subsection{Accuracy comparison between different loss functions with Mnist dataset}
+\begin{center}
+Training set: 60000 \\
+Testing set: 10000\\
+\begin{tabular}{c c c}
+	\hline
+		Loss function & accuracy\\
+		 Hinge& 86.89\%  \\
+		 Mean Square& 87.07\% \\
+		 Softmax with proximal gradient & 87.28\%  \\
+		 Softmax with gradient descent  & 87.23\% \\ 
+	\hline
+	\end{tabular}
+\end{center}
+
+\section{Tuning Hyperparameters in the case of  using softmax and proximal gradient }
+We picked softmax as our loss function, which minimizes z update with proximal gradient. We tried to tune its hyperparameters to see what we can get. The results and our guessing is demonstrated as follows.
+\subsection{Comparison of different $\epsilon$}
 \begin{center}
 Loss function: Softmax + proximal gradient\\
 Neural Network: 1 hidden layer with 300 units\\
 Iteration times of proximal gradient: 25 \\
-Step size of proximal gradient: 0.1 \\
+Step size of proximal gradient: 0.01 \\
 Update $\beta$ and $\gamma$:  No\\
 	\begin{tabular}{c c c}
 	\hline
@@ -47,7 +71,7 @@ Update $\beta$ and $\gamma$:  No\\
 
 \begin{description}
 \item[Conclusion and Guess] Smaller $\epsilon$ will acheive a better result. In Zhenzhang's test, sometimes if the $\epsilon$ is too big, we cannot achieve an overfitting with small same training and testing set.\\
-For the $z_L$ (the z in the last layer), updating it includes the $\lambda$ item. We guess that there is a trade-off between these three items. If $\epsilon$ is too big, the$\lambda$ item will have a higher weight. Then we have to spend some accuracy to acheive a smaller objective cost.
+For the $z_L$ (the z in the last layer), updating it includes the $\lambda$ item. We guess that there is a trade-off between these three items. If $\epsilon$ is too big, the$\lambda$ item will have a higher weight. Then we have to spend some accuracy to achieve a smaller objective cost.
 \end{description}
 
 
@@ -56,7 +80,7 @@ For the $z_L$ (the z in the last layer), updating it includes the $\lambda$ item
 $\epsilon$ : 1e-4\\
 Loss function: Softmax + proximal gradient\\
 Iteration times of proximal gradient: 25 \\
-Step size of proximal gradient: 0.1 \\
+Step size of proximal gradient: 0.01 \\
 Update $\beta$ and $\gamma$:  No\\
 \begin{tabular}{c c c c}
 	\hline
@@ -72,12 +96,12 @@ Update $\beta$ and $\gamma$:  No\\
 \item[Conclusion and Guess] 1 layer and 300 units network should be enough for the MNIST. It's highly possible if we add more trainning data and the 2-layer network will acheive a higher result. Unfortunately, due to the limitation of our computers, using 60000 training data is extremely slow.
 \end{description}
 
-\subsection{Comparison of iteration times for proximal gradient}
+\subsection{Comparison of iteration times}
 \begin{center}
 $\epsilon$ : 1e-4\\
 Loss function: Softmax + proximal gradient\\
 Neural Network: 1 hidden layer with 300 units\\
-Step size of proximal gradient: 0.1 \\
+Step size of proximal gradient: 0.01 \\
 Update $\beta$ and $\gamma$:  No\\
 	\begin{tabular}{c c c c c c c}
 	\hline
@@ -91,7 +115,7 @@ Update $\beta$ and $\gamma$:  No\\
 	*: 2 hidden layers and [300,150]
 \end{center}
 
-\subsection{Comparison of step size for proximal gradient}
+\subsection{Comparison of step size }
 \begin{center}
 $\epsilon$ : 1e-4\\
 Loss function: Softmax + proximal gradient\\
@@ -131,10 +155,14 @@ Step size of proximal gradient: 0.1 \\
 \item[Conclusion and Guess] Keeping $\beta$ and $\gamma$ is better.
 \end{description}
 
-\section{General conclusion}
-Generally, our network with ADMM can only achieve accuracy around 87\%. Our guess is that if we increase the training dataset(by image distortion and rotation), the result may be better. \\
-According to the mnist dataset description, the first 5000 testing image are cleaner. But in our testing, the last one can acheive 90\% accuracy while first only has 82\% accuracy. \\
-The different loss functions don't have a big impact on accuracy in this test. But for hingeloss and mean square, we can update the $z_L$ by linear system. Softmax requires more complicated calculation. We tried to figure out the conjugate of it (we googled the convexity of softmax and someone has proved it's convex), but failed. \\
+\section{Conclusion}
+To conclude, the testing result showed the best accuracy our neural network with ADMM can achieve is around 87\%, which is far away from the result on the Mnist website. 
 
-In conclusion, ADMM can work for the neural network. The performance depends on the hyperparameters. We haven't considered the speed yet. The first idea is that we need to decide the loss function first. 
+Based on the result,  we have several guess on how to improve accuracy.  One guess is that we might improve it by increasing the training dataset( such as image distortion and rotation as Thomas mentioned sometime). \\
+
+According to the Mnist dataset description, the first 5000 testing images are cleaner. However, it turns out that the later 5000 images gives much better result. We trained the network with 60000 images and then tested it with first 5000 images which gave us 82\%  accuracy, while the later 5000 images led to 90\% accuracy.\\ 
+
+On the other hand, from our experiment, we found that different loss functions have only a little impact on the accuracy. However,  with Hinge and Mean Square, we can update the $z_L$ by linear system, while Softmax requires more complicated minimization subproblem. We tried to figure out the conjugate of it (we googled the convexity of softmax and someone has proved it's convex), but failed to get the result. \\
+
+Anyway, our goal is to examine whether ADMM works for the neural network. We believe that we can say it works, only a satisfactory performance requires more investigation on the hyper parameters. We also neglect the performance such as speed or memory at present. To further tune the hyper parameters, we believe we need to decide the loss function first. 
 \end{document}

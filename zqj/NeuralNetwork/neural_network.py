@@ -94,8 +94,8 @@ class NeuralNetwork():
             waL =  w[L].dot(a[L-1])
             """ lossType: hinge, msq, smx """
             zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
-            #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
-            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= 'prox', tau=0.001 , ite= 25)
+            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
+            #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= 'gd', tau=0.01 , ite= 25)
             
 
             # lambda update
