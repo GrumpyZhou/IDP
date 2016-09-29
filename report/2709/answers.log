@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.10.15)  29 SEP 2016 11:08
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.10.15)  29 SEP 2016 15:24
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -535,99 +535,84 @@ e
 LaTeX Warning: No \author given.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 27--28
+Underfull \hbox (badness 10000) in paragraph at lines 25--35
 
  []
 
+<1_dataloss.png, id=1, 600.2425pt x 593.21625pt>
+File: 1_dataloss.png Graphic file (type png)
+ <use 1_dataloss.png>
+Package pdftex.def Info: 1_dataloss.png used on input line 46.
+(pdftex.def)             Requested size: 90.03249pt x 88.97859pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 29--37
+<1_qudraloss0-1.png, id=3, 600.2425pt x 593.21625pt>
+File: 1_qudraloss0-1.png Graphic file (type png)
+ <use 1_qudraloss0-1.png>
+Package pdftex.def Info: 1_qudraloss0-1.png used on input line 47.
+(pdftex.def)             Requested size: 90.03249pt x 88.97859pt.
 
- []
+<1_qudraloss1-2.png, id=4, 610.28pt x 593.21625pt>
+File: 1_qudraloss1-2.png Graphic file (type png)
+ <use 1_qudraloss1-2.png>
+Package pdftex.def Info: 1_qudraloss1-2.png used on input line 48.
+(pdftex.def)             Requested size: 91.53804pt x 88.97859pt.
 
+<2_dataloss.png, id=5, 600.2425pt x 593.21625pt>
+File: 2_dataloss.png Graphic file (type png)
+ <use 2_dataloss.png>
+Package pdftex.def Info: 2_dataloss.png used on input line 49.
+(pdftex.def)             Requested size: 90.03249pt x 88.97859pt.
 
-Overfull \hbox (17.19182pt too wide) in paragraph at lines 29--37
-\OT1/cmr/m/n/10 In our pro-gram, we ini-tial-ized $\OML/cmm/m/it/10 W[] \OT1/cm
-r/m/n/10 = \OML/cmm/m/it/10 ^^O \OMS/cmsy/m/n/10 ^^C \OML/cmm/m/it/10 randn\OT1
-/cmr/m/n/10 (\OML/cmm/m/it/10 sizeof\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 W[]\OT1/c
-mr/m/n/10 ))$, $\OML/cmm/m/it/10 z[] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 ^^O \OM
-S/cmsy/m/n/10 ^^C \OML/cmm/m/it/10 randn\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 sizeo
-f\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 z[]\OT1/cmr/m/n/10 ))$
- []
+<2_qudraloss0-1.png, id=6, 629.35126pt x 593.21625pt>
+File: 2_qudraloss0-1.png Graphic file (type png)
+ <use 2_qudraloss0-1.png>
+Package pdftex.def Info: 2_qudraloss0-1.png used on input line 50.
+(pdftex.def)             Requested size: 94.3986pt x 88.97859pt.
+
+<2_qudraloss1-2.png, id=7, 610.28pt x 593.21625pt>
+File: 2_qudraloss1-2.png Graphic file (type png)
+ <use 2_qudraloss1-2.png>
+Package pdftex.def Info: 2_qudraloss1-2.png used on input line 51.
+(pdftex.def)             Requested size: 91.53804pt x 88.97859pt.
 
 [1
 
 {/usr/local/texlive/2015/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<1_dataloss.png, id=17, 600.2425pt x 593.21625pt>
-File: 1_dataloss.png Graphic file (type png)
- <use 1_dataloss.png>
-Package pdftex.def Info: 1_dataloss.png used on input line 48.
-(pdftex.def)             Requested size: 90.03249pt x 88.97859pt.
-
-<1_qudraloss0-1.png, id=19, 600.2425pt x 593.21625pt>
-File: 1_qudraloss0-1.png Graphic file (type png)
- <use 1_qudraloss0-1.png>
-Package pdftex.def Info: 1_qudraloss0-1.png used on input line 49.
-(pdftex.def)             Requested size: 90.03249pt x 88.97859pt.
-
-<1_qudraloss1-2.png, id=20, 610.28pt x 593.21625pt>
-File: 1_qudraloss1-2.png Graphic file (type png)
- <use 1_qudraloss1-2.png>
-Package pdftex.def Info: 1_qudraloss1-2.png used on input line 50.
-(pdftex.def)             Requested size: 91.53804pt x 88.97859pt.
-
-<2_dataloss.png, id=21, 600.2425pt x 593.21625pt>
-File: 2_dataloss.png Graphic file (type png)
- <use 2_dataloss.png>
-Package pdftex.def Info: 2_dataloss.png used on input line 51.
-(pdftex.def)             Requested size: 90.03249pt x 88.97859pt.
-
-<2_qudraloss0-1.png, id=22, 629.35126pt x 593.21625pt>
-File: 2_qudraloss0-1.png Graphic file (type png)
-
-<use 2_qudraloss0-1.png>
-Package pdftex.def Info: 2_qudraloss0-1.png used on input line 52.
-(pdftex.def)             Requested size: 94.3986pt x 88.97859pt.
- <2_qudraloss1-2.png, id=23, 610.28pt x 593.21625pt>
-File: 2_qudraloss1-2.png Graphic file (type png)
-
-<use 2_qudraloss1-2.png>
-Package pdftex.def Info: 2_qudraloss1-2.png used on input line 53.
-(pdftex.def)             Requested size: 91.53804pt x 88.97859pt.
-
-Underfull \hbox (badness 10000) in paragraph at lines 63--65
+Underfull \hbox (badness 10000) in paragraph at lines 58--60
 
  []
 
 [2 <./1_dataloss.png> <./1_qudraloss0-1.png> <./1_qudraloss1-2.png> <./2_datalo
 ss.png> <./2_qudraloss0-1.png> <./2_qudraloss1-2.png>] [3] (./answers.aux) ) 
 Here is how much of TeX's memory you used:
- 11201 strings out of 493089
- 235620 string characters out of 6134841
- 244451 words of memory out of 5000000
- 14614 multiletter control sequences out of 15000+600000
- 12544 words of font info for 48 fonts, out of 8000000 for 9000
+ 11203 strings out of 493089
+ 235641 string characters out of 6134841
+ 246451 words of memory out of 5000000
+ 14615 multiletter control sequences out of 15000+600000
+ 12852 words of font info for 49 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 39i,8n,39p,10396b,489s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 39i,7n,39p,10396b,485s stack positions out of 5000i,500n,10000p,200000b,80000s
 </u
-sr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
-r/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr
-/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/
-local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/l
-ocal/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/loc
-al/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local
-/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/t
-exlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/tex
-live/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texli
-ve/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/
-2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/201
-5/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2015/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2015/te
-xmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2015/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on answers.pdf (3 pages, 218638 bytes).
+sr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
+r/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr
+/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/
+local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/l
+ocal/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/lo
+cal/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/loca
+l/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/
+texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/te
+xlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texl
+ive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texliv
+e/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2
+015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2015
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2015/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2015/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2015/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
+Output written on answers.pdf (3 pages, 230288 bytes).
 PDF statistics:
- 87 PDF objects out of 1000 (max. 8388607)
- 54 compressed objects within 1 object stream
+ 91 PDF objects out of 1000 (max. 8388607)
+ 57 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  31 words of extra memory for PDF output out of 10000 (max. 10000000)
 
