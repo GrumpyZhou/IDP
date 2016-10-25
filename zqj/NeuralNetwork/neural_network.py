@@ -86,10 +86,15 @@ class NeuralNetwork():
                
                 # a update
                 wNtr = w[l+1].T
-                a[l] = np.linalg.inv(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0])).dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l]))
+                a[l] = np.linalg.inv(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0])).dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l])) 
                
                 # z update
                 z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
+                aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))                
+                zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
+                
+                #print 'a cons: ',aLoss
+                #print 'z cons:', zLoss
                            
             # L-layer
             # w update
@@ -306,9 +311,10 @@ class NeuralNetwork():
         for l in range(1,L):
             aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))
             self.aConstrLoss[l-1].append(aLoss)
-            
+             
             zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
             self.zConstrLoss[l-1].append(zLoss)
+
 
         zLastLoss = np.sum(self.zQuadraLoss(beta, w[L].dot(a[L-1]), z[L]))
         self.zConstrLoss[L-1].append(zLastLoss)
