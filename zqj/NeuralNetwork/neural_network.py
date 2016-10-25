@@ -158,10 +158,57 @@ class NeuralNetwork():
            zL = self.minZWithGD(beta, waL, y, Lambda, tau, ite)
            
         if method == 'prox':
-           zL = self.minZwithProx(beta, waL, y, Lambda, tau, ite)
+           zL = self.minZWithProx(beta, waL, y, Lambda, tau, ite)
+
+        if method == 'newton':
+           zL = self.minZWithNewton(beta, waL, y, Lambda, tau, ite)
         return zL
 
-    def minZwithProx(self, beta, waL, y, Lambda, tau, ite):
+    def minZWithNewton(self, beta, waL, y, Lambda, tau, ite):
+        zL = np.copy(waL)  
+        
+        for i in range(ite):
+            # calculate probabilities
+            #print zL            
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = zProb - y
+            diag = zProb*(1-zProb)
+            H = np.zeros((zL.shape[0],zL.shape[0]))
+            for i in range(0,zL.shape[1]):
+                pi =  zProb[:,i].reshape(zL.shape[0],1);
+                dLdzi = -1 * pi.dot(pi.T);
+                np.fill_diagonal(dLdzi,diag[:,i])
+                H += dLdzi
+                
+            H = H / zL.shape[1] + 2 * beta * np.identity(zL.shape[0])
+
+            # update
+            zL = zL - tau * np.linalg.inv(H).dot(dLdz)
+        return zL
+
+
+    def minZWithNewton2(self, beta, waL, y, Lambda, ite):
+        zL = np.copy(waL)  
+        
+        for i in range(ite):
+            # calculate probabilities
+            #print zL            
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = zProb - y
+            dLdz2 = zProb*(1-zProb)
+            h = (dLdz + Lambda + 2 * beta * (zL - waL)) / (2 * beta + dLdz2)
+
+            # update
+            zL = zL - h
+        return zL
+
+    def minZWithProx(self, beta, waL, y, Lambda, tau, ite):
         zL = np.copy(waL)    
         
         for i in range(ite):
