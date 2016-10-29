@@ -23,6 +23,7 @@ class NeuralNetwork():
         self.epsilon = epsilon
         self.W = []
         
+        self.totalLoss = [] # total cost
         self.dataLoss = [] # cost from loss function
         self.aConstrLoss = [] # cost from constraint a = h(z)
         self.zConstrLoss = [] # cost from constraint z = wa
@@ -90,8 +91,8 @@ class NeuralNetwork():
                
                 # z update
                 z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
-                aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))                
-                zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
+                #aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))                
+                #zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
                 
                 #print 'a cons: ',aLoss
                 #print 'z cons:', zLoss
@@ -272,6 +273,7 @@ class NeuralNetwork():
         zL_s = np.copy(waL) - Lambda / (2 * beta)
         zL_s[zL_s > 0] = 0
         lossL_s = self.outputCost(beta, waL, zL_s, y, 0, Lambda)
+        #print self.hingeLoss(zL_s, y, 0) == np.sum(self.hinge(zL_s, y))
 
         # zi > 0
         zL_b = waL - (1 + Lambda) / (2 * beta)
@@ -298,10 +300,14 @@ class NeuralNetwork():
 
     def calLoss(self, beta, gamma, a, z, w, y, Lambda, lossType):
         L = len(self.hiddenLayer) + 1
+        TOTAL = 0
         # cal data cost, lossType: hinge, msq, smx
         dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
-        dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / self.trainNum
+        #w[L].dot(self.ReLU(w[L-1].dot(a[0])))
+        dataLoss = np.sum(dataLossOpt[lossType](w[L].dot(self.ReLU(w[L-1].dot(a[0])))
+, y)) / self.trainNum
         self.dataLoss.append(dataLoss)
+        TOTAL += dataLoss
 
         # cal lagrange cost 
         lagraLoss = np.sum(z[L] * Lambda)
@@ -314,10 +320,12 @@ class NeuralNetwork():
              
             zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
             self.zConstrLoss[l-1].append(zLoss)
-
+            TOTAL += aLoss + zLoss
 
         zLastLoss = np.sum(self.zQuadraLoss(beta, w[L].dot(a[L-1]), z[L]))
         self.zConstrLoss[L-1].append(zLastLoss)
+        TOTAL += zLastLoss
+        self.totalLoss.append(TOTAL)
 
     def outputCost(self, beta, wa, z, y, isOne, Lambda): # can be improved
         return self.hingeLoss(z, y, isOne) + self.zQuadraLoss(beta, wa, z) + z * Lambda
