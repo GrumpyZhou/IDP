@@ -21,6 +21,7 @@ class NeuralNetwork():
 		self.aEnergy = list()
 		self.zEnergy = list()
 		self.lossEnergy = list()
+		self.lambEnergy = list()
 		
 		self.w = list();
 		self.w.append(0);
@@ -106,6 +107,9 @@ class NeuralNetwork():
 			#self.gamma *= 1.05
 			self.calEnergy()
 
+		print self.z[self.L-1]
+		print self.y
+
 #---------------------------------------------------------------------------------------
 
 	def updateW(self, i, idmatrixes):
@@ -160,10 +164,10 @@ class NeuralNetwork():
 		 # update
 			zL = (2 * tau * self.beta * waL - tau * self.mylambda + v) / (1 + 2 * tau * self.beta)
 		return zL
-		'''
 
+		'''
 		z = self.z[self.L-1]
-		for j in range(20):
+		for j in range(100):
 			p = np.exp(z)
 			sum_p = np.sum(p,axis=0)
 			p = p/sum_p
@@ -209,11 +213,12 @@ class NeuralNetwork():
 #--------------------------------------------------------------------------------------------
 
 	def calEnergy(self):
-		p = np.exp(self.z[self.L-1])
+		p = np.exp(self.w[self.L-1].dot(self.actFun(self.w[self.L-2].dot(self.a[0]))))
 		sum_p = np.sum(p,axis=0)
 		p = p/sum_p
-		p[self.y==1] = p[self.y==1] - 1
-		p /= self.trainnum
+		p = -np.log(p)
+		#p = p*self.y
+		self.lossEnergy.append(np.sum(p)/self.trainnum)
 		
 		for i in range(1,self.L-1):
 			p = self.z[i]-self.w[i].dot(self.a[i-1])
@@ -233,6 +238,8 @@ class NeuralNetwork():
 		p = np.sqrt(p)
 		p = np.sum(p)/self.trainnum
 		self.zEnergy[self.L-1].append(p)
+
+		self.lambEnergy.append(np.sum(self.z[self.L-1].T.dot(self.mylambda))/self.trainnum)
 		
 
 #-----------------------------------------------------------------------------------------
@@ -276,23 +283,24 @@ class NeuralNetwork():
 #-------------------------------------------------------------------------------------------
 			
 	def getEnergy(self):
-		return self.aEnergy, self.zEnergy, self.lossEnergy
+		return self.aEnergy, self.zEnergy, self.lossEnergy, self.lambEnergy
 
 #-------------------------------------------------------------------------------------------
 
 network_layers = 3
 neurons = [784,300,10]
-trainnum = 20
-testnum = 20
-itnum = 20
+trainnum = 60000
+testnum = 10000
+itnum = 100
 beta = 1
 gamma = 10
-epsilon = 0.000000001
+epsilon = 0.000001
+#epsilon = np.sqrt(0.1/trainnum)
 
 nn = NeuralNetwork(network_layers, neurons, trainnum, testnum, itnum, beta, gamma, epsilon)
 nn.trainByADMM()
 nn.predict()
-ae , ze, le = nn.getEnergy()
+ae , ze, le, be = nn.getEnergy()
 
 for i in range(1,network_layers-1):
 	plt.figure(2*i-1)
@@ -300,8 +308,10 @@ for i in range(1,network_layers-1):
 	plt.figure(2*i)
 	plt.plot(ze[i])
 
-plt.figure(10)
+plt.figure(3)
 plt.plot(ze[network_layers-1])
-plt.figure(11)
+plt.figure(4)
 plt.plot(le)
+plt.figure(5)
+plt.plot(be)
 plt.show()
