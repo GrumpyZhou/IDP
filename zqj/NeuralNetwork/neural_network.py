@@ -22,6 +22,7 @@ class NeuralNetwork():
         self.hiddenLayer = hiddenLayer
         self.epsilon = epsilon
         self.W = []
+        self.zL = np.zeros((0))  
         
         self.totalLoss = [] # total cost
         self.dataLoss = [] # cost from loss function
@@ -56,6 +57,7 @@ class NeuralNetwork():
                 
         w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))
         z.append(epsilon*np.random.randn(classNum, trainNum))
+        
         return a, z, w
 
     def train(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss, lossType = 'smx', minMethod = 'prox', tau=0.01, ite= 25):
@@ -126,6 +128,9 @@ class NeuralNetwork():
 
         # Save the W to network
         self.W = w
+        self.zL = z[L]
+   
+
 
     def predict(self, Xte):
         """
@@ -136,11 +141,20 @@ class NeuralNetwork():
         - Yte: A numpy array containing predicted labels of input images
         """
         w = self.W
+        print w[1].shape
         z = w[1].dot(Xte)
         for l in range(1,len(self.hiddenLayer)+1):
             z = w[l+1].dot(self.ReLU(z))
         y = z
-        return  np.argmax(y, axis=0)
+        return  np.argmax(y, axis=0), y
+
+    def predictByFeed(self, Xte, w):
+        
+        z = w[1].dot(Xte)
+        for l in range(1,len(self.hiddenLayer)+1):
+            z = w[l+1].dot(self.ReLU(z))
+        y = z
+        return  np.argmax(y, axis=0), y
 
    
     def zUpdate(self, beta, gamma, wa, al):
@@ -150,7 +164,7 @@ class NeuralNetwork():
         loss_s = self.quadraCost(beta, gamma, al, wa, z_s) # !!
 
         # z_i > 0 
-        z_b = (gamma * al + beta * z_s) / (beta + gamma)
+        z_b = (gamma * al + beta * wa) / (beta + gamma)
         z_b[z_b < 0] = 0
         loss_b = self.quadraCost(beta, gamma, al, wa, z_b)
         
@@ -172,6 +186,7 @@ class NeuralNetwork():
 
     def minZWithNewton(self, beta, waL, y, Lambda, tau, ite):
         zL = np.copy(waL)  
+        N = zL.shape[1] 
         
         for i in range(ite):
             # calculate probabilities
@@ -180,7 +195,7 @@ class NeuralNetwork():
             zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
 
             # calculate gradient of z
-            dLdz = zProb - y
+            dLdz = (zProb - y)  + 2 * beta * (zL - waL)  + Lambda
             diag = zProb*(1-zProb)
             H = np.zeros((zL.shape[0],zL.shape[0]))
             for i in range(0,zL.shape[1]):
@@ -189,33 +204,16 @@ class NeuralNetwork():
                 np.fill_diagonal(dLdzi,diag[:,i])
                 H += dLdzi
                 
-            H = H / zL.shape[1] + 2 * beta * np.identity(zL.shape[0])
+            H = H / N + 2 * beta * np.identity(zL.shape[0])
 
             # update
             zL = zL - tau * np.linalg.inv(H).dot(dLdz)
         return zL
 
 
-    def minZWithNewton2(self, beta, waL, y, Lambda, ite):
-        zL = np.copy(waL)  
-        
-        for i in range(ite):
-            # calculate probabilities
-            #print zL            
-            zExp = np.exp(zL) 
-            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
-
-            # calculate gradient of z
-            dLdz = zProb - y
-            dLdz2 = zProb*(1-zProb)
-            h = (dLdz + Lambda + 2 * beta * (zL - waL)) / (2 * beta + dLdz2)
-
-            # update
-            zL = zL - h
-        return zL
-
     def minZWithProx(self, beta, waL, y, Lambda, tau, ite):
-        zL = np.copy(waL)    
+        zL = np.copy(waL) 
+        N = zL.shape[1]         
         
         for i in range(ite):
             #zL = np.zeros(waL.shape)
@@ -224,7 +222,7 @@ class NeuralNetwork():
             zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
 
             # calculate gradient of z
-            dLdz = zProb - y
+            dLdz = (zProb - y)
             v = zL - tau * (dLdz)
 
             # update
@@ -297,6 +295,13 @@ class NeuralNetwork():
             y[Y[i],i] = 1
         return y
 
+    def softMaxLossTest(self, w):
+        y = self.toHotOne(self.Ytr, self.classNum) 
+        z = w[1].dot(self.Xtr)
+        for l in range(1,len(self.hiddenLayer)+1):
+            z = w[l+1].dot(self.ReLU(z))
+        loss = np.sum(self.softMax(z, y)) / self.trainNum
+        return loss
 
     def calLoss(self, beta, gamma, a, z, w, y, Lambda, lossType):
         L = len(self.hiddenLayer) + 1
@@ -304,8 +309,7 @@ class NeuralNetwork():
         # cal data cost, lossType: hinge, msq, smx
         dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
         #w[L].dot(self.ReLU(w[L-1].dot(a[0])))
-        dataLoss = np.sum(dataLossOpt[lossType](w[L].dot(self.ReLU(w[L-1].dot(a[0])))
-, y)) / self.trainNum
+        dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / self.trainNum
         self.dataLoss.append(dataLoss)
         TOTAL += dataLoss
 
@@ -367,7 +371,7 @@ class NeuralNetwork():
     def softMax(self, z, y):
         """ Evaluate Multiclass SVM Loss """ 
         loss = np.zeros(y.shape)
-        zExp = np.exp(z) 
+        zExp = np.exp(z/10000000000) 
         zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True) 
         loss = -1 * y * np.log(zProb)
         return loss
