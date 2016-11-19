@@ -6,7 +6,7 @@ class NeuralNetwork():
     A neural network with L layers, for each layer the dimension of neurons is specified in Dim[],
     Dim[0] is later filled by the input dimension.
     """
-    def __init__(self, Xtr, Ytr, classNum, hiddenLayer, epsilon ):
+    def __init__(self, Xtr, Ytr, classNum, hiddenLayer, epsilon):
         """
         Input:
         - Xtr: A numpy array of shape (D, N) containing a minibatch of data
@@ -21,6 +21,7 @@ class NeuralNetwork():
         self.trainNum = Xtr.shape[1]
         self.hiddenLayer = hiddenLayer
         self.epsilon = epsilon
+        
         self.W = []
         self.zL = np.zeros((0))  
         
@@ -37,7 +38,24 @@ class NeuralNetwork():
         print self.dataLoss, ' ',self.aConstrLoss, ' ', self.zConstrLoss
         print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
         
-        
+    def initNetworkWithFeed(self, trainNum, classNum, hiddenLayer, epsilon, initW):
+        """ 
+        Return:
+        - a: Activation list for each layer [a0, a1, a2]
+        - z: A z list for each layer [0, z1, z2, z3]
+        - w: weight list for each layer  [0, w1, w2, w3]
+        """
+        L = len(self.hiddenLayer)
+        w = initW
+        a = [self.Xtr]
+        z = [np.zeros((0))]
+        for l in range(0, L):
+            z.append(w[l+1].dot(a[l]))
+            a.append(self.ReLU(z[l+1])) 
+        z.append(w[L+1].dot(a[L]))
+        return a, z, w
+
+
     def initNetwork(self, trainNum, classNum, hiddenLayer, epsilon):
         """ 
         Return:
@@ -60,7 +78,10 @@ class NeuralNetwork():
         
         return a, z, w
 
-    def train(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss, lossType = 'smx', minMethod = 'prox', tau=0.01, ite= 25):
+    def update():
+        pass
+
+    def train(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss, lossType = 'smx', minMethod = 'prox', tau=0.01, ite= 25, initW = None ):
 
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
@@ -73,7 +94,12 @@ class NeuralNetwork():
         gamma = 1.0 * activConsWeight
 
         # - a: activation, z: output, w: weight
-        a, z, w = self.initNetwork(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon)
+        if initW == None:
+            a, z, w = self.initNetwork(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon)
+        else:
+            print initW[1].shape
+            a, z, w = self.initNetworkWithFeed(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon, initW)
+        
         Lambda = np.zeros_like(z[L])
         
         # Transform y to hotone representation
@@ -371,7 +397,7 @@ class NeuralNetwork():
     def softMax(self, z, y):
         """ Evaluate Multiclass SVM Loss """ 
         loss = np.zeros(y.shape)
-        zExp = np.exp(z/10000000000) 
+        zExp = np.exp(z) 
         zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True) 
         loss = -1 * y * np.log(zProb)
         return loss
