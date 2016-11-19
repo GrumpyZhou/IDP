@@ -1,5 +1,6 @@
 import numpy as np
 from random import shuffle
+from data_utils import DataSet
 
 class NeuralNetwork():
     """
@@ -38,25 +39,34 @@ class NeuralNetwork():
         print self.dataLoss, ' ',self.aConstrLoss, ' ', self.zConstrLoss
         print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
         
-    def initNetworkWithFeed(self, trainNum, classNum, hiddenLayer, epsilon, initW):
+    def initNetwork(self, trainNum, classNum, hiddenLayer, epsilon, initW):
         """ 
         Return:
         - a: Activation list for each layer [a0, a1, a2]
         - z: A z list for each layer [0, z1, z2, z3]
         - w: weight list for each layer  [0, w1, w2, w3]
         """
-        L = len(self.hiddenLayer)
-        w = initW
+        L = len(hiddenLayer)
         a = [self.Xtr]
         z = [np.zeros((0))]
+
+        if initW != None:
+            w = initW
+        else:
+            w = [np.zeros((0))]
+            for l in range(0, L):
+                w.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
+            w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))
+            
         for l in range(0, L):
             z.append(w[l+1].dot(a[l]))
-            a.append(self.ReLU(z[l+1])) 
+            a.append(self.ReLU(z[l+1]))
         z.append(w[L+1].dot(a[L]))
+        
         return a, z, w
 
-
-    def initNetwork(self, trainNum, classNum, hiddenLayer, epsilon):
+    @deprecated
+    def initNetwork2(self, trainNum, classNum, hiddenLayer, epsilon):
         """ 
         Return:
         - a: Activation list for each layer [a0, a1, a2]
@@ -74,14 +84,52 @@ class NeuralNetwork():
             a.append(epsilon*np.random.randn(hiddenLayer[l], trainNum))
                 
         w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))
-        z.append(epsilon*np.random.randn(classNum, trainNum))
-        
+        z.append(epsilon*np.random.randn(classNum, trainNum)) 
         return a, z, w
 
-    def update():
-        pass
+    def admmUpdate(self, a, z, w, L, weightConsWeight, activConsWeight, hasLambda, calLoss, lossType, minMethodz, tau, ite):
+        # One ADMM updates
+        # Walk through 1~L-1 layer network
+        for l in range(1, L):
+            # w update
+            w[l] = np.linalg.lstsq(a[l-1].T,z[l].T)[0].T
+            #w[l] = z[l].dot(np.linalg.pinv(a[l-1]))
+           
+            # a update
+            wNtr = w[l+1].T
+            a[l] = np.linalg.inv(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0])).dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l])) 
+           
+            # z update
+            z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
+                       
+        # L-layer
+        # w update
+        w[L] = np.linalg.lstsq(a[L-1].T,z[L].T)[0].T            
+        #w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
+        
+        # zL update
+        waL =  w[L].dot(a[L-1])
 
-    def train(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss, lossType = 'smx', minMethod = 'prox', tau=0.01, ite= 25, initW = None ):
+        #print 'Train model: lossType %s, minMethod %s', (lossType, minMethod)
+        """ lossType: hinge, msq, smx """
+        zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
+        z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= minMethod, tau=tau , ite=ite)
+
+        # lambda update
+        if hasLambda:
+           Lambda += beta * (z[L] - waL)
+        
+        # Update beta, gamma
+        beta *= 1
+        gamma *= 1
+        
+        # Calculate total loss
+        if calLoss:
+            self.calLoss(beta, gamma, a, z, w, y, Lambda, lossType)
+
+        return a, z, w
+
+    def train(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, batchSize=0, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
 
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
@@ -94,12 +142,36 @@ class NeuralNetwork():
         gamma = 1.0 * activConsWeight
 
         # - a: activation, z: output, w: weight
-        if initW == None:
-            a, z, w = self.initNetwork(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon)
-        else:
-            print initW[1].shape
-            a, z, w = self.initNetworkWithFeed(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon, initW)
+        a, z, w = self.initNetwork(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon, initW)   
+        Lambda = np.zeros_like(z[L])
         
+        # Transform y to hotone representation
+        y = self.toHotOne(self.Ytr, C) 
+               
+        # Main part of ADMM updates
+        for k in range(iterNum):
+           a, z, w = admmUpdate(a, z, w, L, weightConsWeight, activConsWeight, hasLambda, calLoss, lossType, minMethod, tau, ite)
+        
+        self.W = w
+        self.zL = z[L]
+    
+
+    def train2(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+
+
+        # Initialization 
+        # - C: number of classes, N: number of training images, L: number of layers(including output layer)
+        C = self.classNum
+        N = self.trainNum
+        L = len(self.hiddenLayer) + 1
+        
+        # - beta,gama: penalty coefficiencies
+        beta = 1.0 * weightConsWeight 
+        gamma = 1.0 * activConsWeight
+
+        # - a: activation, z: output, w: weight
+
+        a, z, w = self.initNetwork(self.trainNum, self.classNum, self.hiddenLayer, self.epsilon, initW)   
         Lambda = np.zeros_like(z[L])
         
         # Transform y to hotone representation
@@ -138,7 +210,6 @@ class NeuralNetwork():
             zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
             #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
             z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= minMethod, tau=0.01 , ite= 25)
-            
 
             # lambda update
             if hasLambda:
