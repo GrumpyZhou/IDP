@@ -60,8 +60,7 @@ class DataSet():
             images = np.reshape(images, (images.shape[0], -1))
         if transpose:
             images = images.T
-            print images.shape
-            
+ 
         self.images = images
         self.labels = labels
         self.round = 0
@@ -83,23 +82,23 @@ class DataSet():
     def nextBatch(self, batchSize):
         """Return the next 'batchSize' entries from this data set."""
         start = self.index
-        self.index += batch_size
-        print start, self.index, self.imgNum
+        self.index += batchSize
         if self.index > self.imgNum:
             # One round completed
             self.round += 1
             # Shuffle the data
-            perm = numpy.arange(self.imgNum)
-            numpy.random.shuffle(perm)
-            self.images = self.images[perm]
+            perm = np.arange(self.imgNum)
+            np.random.shuffle(perm)
+            self.images = self.images[:,perm]
             self.labels = self.labels[perm]
             # Start next round
             print 'Start round #',self.round
             start = 0
             self.index = batchSize
-            assert batch_size <= self._num_examples
-        end = self.index
-    return self.images[start:end], self.labels[start:end]
+            assert batchSize <= self.imgNum
+        end = self.index 
+        print start, end
+        return self.images[:,range(start,end)], self.labels[start:end]
 
 def show(image):
     """
