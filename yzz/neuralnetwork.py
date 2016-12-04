@@ -135,7 +135,7 @@ class NeuralNetwork():
 		z_s[z_s>0] = 0
 		l_s = self.regularElementWiseCost(self.beta, self.gamma, self.a[i], aw, z_s)
 
-		z_b = (self.gamma * self.a[i] + self.beta * z_s) / (self.beta + self.gamma)
+		z_b = (self.gamma * self.a[i] + self.beta * aw) / (self.beta + self.gamma)
 		z_b[z_b<0] = 0
 		l_b = self.regularElementWiseCost(self.beta, self.gamma, self.a[i], aw, z_b)
 		
@@ -167,7 +167,7 @@ class NeuralNetwork():
 
 		'''
 		z = self.z[self.L-1]
-		for j in range(100):
+		for j in range(20):
 			p = np.exp(z)
 			sum_p = np.sum(p,axis=0)
 			p = p/sum_p
@@ -217,7 +217,7 @@ class NeuralNetwork():
 		sum_p = np.sum(p,axis=0)
 		p = p/sum_p
 		p = -np.log(p)
-		#p = p*self.y
+		p = p*self.y
 		self.lossEnergy.append(np.sum(p)/self.trainnum)
 		
 		for i in range(1,self.L-1):
@@ -289,12 +289,12 @@ class NeuralNetwork():
 
 network_layers = 3
 neurons = [784,300,10]
-trainnum = 60000
-testnum = 10000
-itnum = 100
+trainnum = 600
+testnum = 100
+itnum = 20
 beta = 1
 gamma = 10
-epsilon = 0.000001
+epsilon = 0.0001
 #epsilon = np.sqrt(0.1/trainnum)
 
 nn = NeuralNetwork(network_layers, neurons, trainnum, testnum, itnum, beta, gamma, epsilon)

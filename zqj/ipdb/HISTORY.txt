@@ -1,0 +1,203 @@
+Changelog
+=========
+
+0.10.1 (2016-06-14)
+-------------------
+
+- Support IPython 5.0.
+  [ngoldbaum]
+
+
+0.10.0 (2016-04-29)
+-------------------
+
+- Stop trying to magically guess when stdout needs to be captured.
+  Like needed by `nose`.
+  Rather, provide a set of function that can be called explicitely when needed.
+  [gotcha]
+
+- drop support of IPython before 0.10.2
+
+
+0.9.4 (2016-04-29)
+------------------
+
+- Fix Restart error when using `python -m ipdb`
+  Closes https://github.com/gotcha/ipdb/issues/93.
+  [gotcha]
+
+
+0.9.3 (2016-04-15)
+------------------
+
+- Don't require users to pass a traceback to post_mortem.
+  [Wilfred]
+
+
+0.9.2 (2016-04-15)
+------------------
+
+- Closes https://github.com/gotcha/ipdb/issues/93.
+  [gotcha]
+
+
+0.9.1 (2016-04-12)
+------------------
+
+- Reset ``sys.modules['__main__']`` to original value.
+  Closes https://github.com/gotcha/ipdb/issues/85
+  [gotcha]
+
+- Fix support of IPython versions 0.x
+  [asivokon]
+
+
+0.9.0 (2016-02-22)
+------------------
+
+- Switch to revised BSD license (with approval of all contributors).
+  Closes https://github.com/gotcha/ipdb/issues/68
+  [lebedov, gotcha]
+
+0.8.3 (2016-02-17)
+------------------
+
+- Don't pass sys.argv to IPython for configuration.
+  [emulbreh]
+
+
+0.8.2 (2016-02-15)
+------------------
+
+- Fix lexical comparison for version numbers.
+  [sas23]
+
+- Allow configuring how many lines of code context are displayed
+  by `set_trace`
+  [JamshedVesuna]
+
+- If an instance of IPython is already running its configuration will be
+  loaded.
+  [IxDay]
+
+
+0.8.1 (2015-06-03)
+------------------
+
+- Make Nose support less invasive.
+  Closes https://github.com/gotcha/ipdb/issues/52
+  Closes https://github.com/gotcha/ipdb/issues/31
+  [blink1073, gotcha]
+
+- Fix for post_mortem in context manager.
+  Closes https://github.com/gotcha/ipdb/issues/20
+  [omergertel]
+
+
+0.8 (2013-09-19)
+----------------
+
+- More Python 3 compatibility; implies dropping Python 2.5 support.
+  Closes https://github.com/gotcha/ipdb/issues/37
+  [gotcha]
+
+
+0.7.1 (2013-09-19)
+------------------
+
+- IPython 1.0 compatibility.
+  Closes https://github.com/gotcha/ipdb/issues/44
+  [pgularski]
+
+- Index into version_info in setup.py for Python 2.6 compatibility.
+  [kynan]
+
+- Add Travis CI configuration.
+  [kynan]
+
+0.7 (2012-07-06)
+----------------
+
+- Add ``launch_ipdb_on_exception`` context manager. Implies dropping Python 2.4 support.
+  [Psycojoker]
+
+- Wrap sys.excepthook only once.
+  [marciomazza]
+
+- Add GPL file and refer in headers.
+  [stan3]
+
+- Python 3 support.
+  [Piet Delport]
+
+- Basic tests.
+  [msabramo]
+
+- Added the functions ``runcall``, ``runeval`` and ``run``.
+  [dimasad]
+
+
+0.6.1 (2011-10-17)
+------------------
+
+- State dependency on IPython later or equal to 0.10.
+  [gotcha]
+
+
+0.6 (2011-09-01)
+----------------
+
+- Add setuptools ``console_scripts`` entry point.
+  [akrito, gotcha] 
+
+- Nose support.
+  Closes https://github.com/gotcha/ipdb/issues/8
+  [akaihola, gotcha]
+
+
+0.5 (2011-08-05)
+----------------
+
+- IPython 0.11 support.
+  [lebedov]
+
+
+0.4 (2011-06-13)
+----------------
+
+- When used from IPython, use its colors.
+  Closes https://github.com/gotcha/ipdb/issues/1
+  [gotcha]
+
+- Fixed errors when exiting with "q". 
+  [gotcha]
+
+- Allow use of ``python -m ipdb mymodule.py``.
+  Python 2.7 only. 
+  Closes https://github.com/gotcha/ipdb/issues/3 
+  [gotcha]
+
+- Fixed post_mortem when the traceback is None.
+  [maurits]
+
+
+0.3 (2011-01-16)
+----------------
+
+- Add ``post_mortem()`` for ``Products.PDBDebugMode`` support.
+  [Jean Jordaan]
+
+- Moved to github.com.
+
+
+0.2 (2010-10-20)
+----------------
+
+- Added ``pm()``.
+  [Paulo Benedict Ang]
+
+
+0.1 (2010-04-26)
+----------------
+
+- First "non dev" release.
