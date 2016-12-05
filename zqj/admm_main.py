@@ -26,17 +26,21 @@ def getMiniPatch(X_train, Y_train, X_test, Y_test, trNum, teNum, transposed):
     return Xtr.T, Xte.T, Ytr, Yte
 
 
+
+
+print '\n\nTesting date:  %s' % time.strftime("%x")
+
 # Load Mnist Data
 mnistDir = "NeuralNetwork/MnistData"
 X_train,Y_train,X_test,Y_test = getMnistData(mnistDir)
 
-(trNum,teNum) = (10000,1000)
+(trNum,teNum) = (6000,1000)
 i = 0
 X_tr, X_te, Y_tr, Y_te = getMiniPatch(X_train, Y_train, X_test, Y_test, trNum, teNum, 1)
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
 
 # Initialize networkfrom datetime import datetime, date, time
-hiddenLayer = [300]
+hiddenLayer = [300,150]
 classNum = 10 
 epsilon= 0.0001 
 network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
@@ -44,10 +48,11 @@ network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
 # Train param
 weightConsWeight = 10
 activConsWeight = 15
-iterNum = 70
+iterNum = 120
 hasLambda = False
 calLoss = False
 
+print 'Config: epsilon:%f iter:%d '%(epsilon,iterNum)
 """ 
 Input:
 weightConsWeight, activConsWeight
@@ -59,7 +64,6 @@ minMethod:  if lossType is 'smx', the method to minimize the zLastUpdate has to 
 tau, ite:   if lossType is 'smx', the step size and iteration of gradient descent/proximal gradient have to be specified, 
             default: tau=0.01, ite=25; 
 """
-
 tic = time.time()
 network.train2(weightConsWeight, activConsWeight, iterNum, hasLambda, 
                               calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25)
