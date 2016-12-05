@@ -65,20 +65,20 @@ As we focus on applying new optimization methods instead of exploring deep netwo
 
 \section*{Approach}
 \subsection*{Alternating Direction Method of Multipliers}
-One promising option to solve a convex optimization problem  would be using Alternating Direction Method of Multipliers (ADMM). The main idea of ADMM is to decompose the original problem into several smaller sub-problems which are easier to handle and solve. Recently, quite a few researches have applied ADMM to non-convex problems and achieved impressive results. Compared with back propagation, ADMM is more robust to being trapped in a local optima, since ADMM solves each sub-problem globally.(??) Meanwhile, the decomposition leads to easier parallel programming. Therefore, we decide to apply ADMM to neural network and hope to achieve a dramatic speedups compared with back propagation.
+One promising option to solve a convex optimization problem  would be using Alternating Direction Method of Multipliers (ADMM). The main idea of ADMM is to decompose the original problem into several smaller sub-problems which are easier to handle and solve. Recently, quite a few researches have applied ADMM to non-convex problems and achieved impressive results. Compared with back propagation, ADMM is more robust to not being trapped in a local optima, since ADMM solves each sub-problem globally. Meanwhile, the decomposition leads to easier parallel programming. Therefore, we decide to apply ADMM to neural network and hope to achieve a dramatic speedups compared with back propagation.
 
 \subsection*{Plan of our project}
-We would like to start our project with a simple neural network and train it on MNIST database. The neural network consists of $L$ layers. There is a linear operator $W_l$, which we call weight, between adjacent layers and each neuron is a non-linear neural activation function $h_l$. (??)Given an input $a_{l-1}$ and its label $y$, the goal of the neural network is to find the best weight $W$ which minimizes a loss function $\mathcal{L}$. To clarify(??), we define the problem as following:
+To verify if ADMM can work for training neural network, we start our project with MNIST database and a small network. The neural network consists of $L$ layers. There is a linear operator $W_l$, which is also called weight, between adjacent layers and in each layer, each "neuron" is a computational unit that is a active function. Given an input $a_{l-1}$ and its label $y$, the goal of the neural network is to find the best weight $W$ which minimizes a loss function $\mathcal{L}$. To clarify(??), we define the problem as following:
 \begin{equation}
 \begin{aligned}
 & \underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}}
 & & \mathcal{L}(z_L,y) \\
 & \text{s.t.}
-& & z_l = W_la_{l-1}, for l = 1,2,...,L \\
-& & & a_l = h_l(z_l), for l = 1,2,...L-1.
+& & z_l = W_la_{l-1},  l = 1,2,...,L \\
+& & & a_l = h_l(z_l),  l = 1,2,...L-1.
 \end{aligned}
 \end{equation}
-Based on (1), we try to analyze this problem and apply ADMM to it. Our first aim is to implement the algorithm from (1) and check its feasibility for this problem. If it works for above problem, we will try to analyze this algorithm and  improve the performance. Otherwise, reviewing each part of this algorithm and figure out the correct solution will be included. Afterwards, comparing it with back propagation is one part of our project.\\
-After above steps, we can conclude that ADMM is feasible for training neural network. To highlight the advantage of ADMM, we would like to apply it to a more complicated and deeper neural network such as CNN or RNN.\\
-Since the problem in equation (1) is an nonlinear optimization one and we are doing our inter discipline project in Mathematics faculty. We would like to choose the course "Nonlinear Optimization: Advanced [MA3503]". The content of this course like optimality conditions will be helpful for analyzing our problem. Some numerical methods introduced in this course might give us some ideas about solving our problem.
+Based on [1], we try to analyze this problem and apply ADMM to it. Our first goal is to implement the algorithm from [1] and check its feasibility for this problem. If it works for above problem, we will  analyze this algorithm and  improve the performance. Otherwise, reviewing each part of this algorithm and figure out the correct solution will be included. Afterwards, comparing it with back propagation is one part of our project.\\
+After above steps, we can conclude if ADMM is feasible for training neural network. To highlight the advantage of ADMM, applying it to a more complicated and deeper neural network such as CNN or RNN is our further plan.\\
+Since the problem in equation (1) is an nonlinear optimization one and this inter discipline project is in Mathematics faculty, we choose the lecture "Nonlinear Optimization: Advanced [MA3503]". The content of this course like optimality conditions will be helpful for analyzing our problem. Some numerical methods introduced in this lecture might give us ideas about solving it.
 \end{document}
