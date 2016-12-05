@@ -1,6 +1,7 @@
 import numpy as np
 from random import shuffle
 import time
+import datetime
 from data_utils import DataSet
 
 class NeuralNetwork():
@@ -37,9 +38,22 @@ class NeuralNetwork():
             self.zConstrLoss.append([])
         self.zConstrLoss.append([]) # cost from output layer zL
 
-        print self.dataLoss, ' ',self.aConstrLoss, ' ', self.zConstrLoss
         print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
         
+
+    def saveWeight(self):
+        w = self.W
+        today = datetime.datetime.now().strftime ("%Y%m%d")
+        np.savez('test/saved_weight/weight %s.npz' % today, w1=w[1], w2=w[2])
+
+    def loadWeight(self, path=None):
+        w = [0]
+        with np.load("weight.npz") as data:
+            w.append(data['w1'])
+            w.append(data['w2'])
+        self.W = w
+        print len(w)
+
     def initNetwork(self, Xtr, classNum, hiddenLayer, epsilon, initW):
         """ 
         Return:
@@ -66,17 +80,7 @@ class NeuralNetwork():
             
         return a, z, w
 
-    def getParaInit(self, a, z, w):
-        L = len(self.hiddenLayer)
-
-        for l in range(0, L):
-            z.append(w[l+1].dot(a[l]))
-            a.append(self.ReLU(z[l+1]))
-        z.append(w[L+1].dot(a[L]))
-
-        return a, z, w
-
-    def initNetwork2(self, trainNum, classNum, hiddenLayer, epsilon):
+    def initNetworkRandom(self, trainNum, classNum, hiddenLayer, epsilon):
         """ 
         Return:
         - a: Activation list for each layer [a0, a1, a2]
@@ -140,7 +144,6 @@ class NeuralNetwork():
             # Calculate total loss
             if calLoss:
                 self.calLoss(beta, gamma, a, z, w, y, Lambda, lossType)
-            print i,":",time.time() - t1
 
         return w, Lambda
 
@@ -183,8 +186,30 @@ class NeuralNetwork():
         self.W = w
         self.zL = z[L]
     
-
     def train2(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+        # Initialization 
+        # - C: number of classes, N: number of training images, L: number of layers(including output layer)
+        C = self.classNum
+        N = self.trainNum
+        L = len(self.hiddenLayer) + 1
+        
+        # - beta,gama: penalty coefficiencies
+        beta = 1.0 * weightConsWeight 
+        gamma = 1.0 * activConsWeight
+
+        C = self.classNum
+        a, z, w = self.initNetwork(self.Xtr, C , self.hiddenLayer, self.epsilon, initW)   
+        Lambda = np.zeros_like(z[L])
+        y = self.toHotOne(self.Ytr, C)
+
+        # ADMM Update
+        w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda)
+            
+        # Save the W to network
+        self.W = w
+        self.zL = z[L]
+        
+    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
 
 
         # Initialization 
@@ -199,7 +224,7 @@ class NeuralNetwork():
 
         # - a: activation, z: output, w: weight
 
-        a, z, w = self.initNetwork(self.Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW)   
+        a, z, w = self.initNetwork(self.Xtr, C, self.hiddenLayer, self.epsilon, initW)   
         Lambda = np.zeros_like(z[L])
         
         # Transform y to hotone representation
@@ -221,21 +246,14 @@ class NeuralNetwork():
                 
                 # z update
                 z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
-                #aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))                
-                #zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
-                
-                #print 'a cons: ',aLoss
-                #print 'z cons:', zLoss
-                           
+                                         
             # L-layer
             # w update
-            #w[L] = np.linalg.lstsq(a[L-1].T,z[L].T)[0].T            
             w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
             
             # zL update
             waL =  w[L].dot(a[L-1])
 
-            #print 'Train model: lossType %s, minMethod %s', (lossType, minMethod)
             """ lossType: hinge, msq, smx """
             zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
             #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
@@ -257,8 +275,6 @@ class NeuralNetwork():
         self.W = w
         self.zL = z[L]
    
-
-
     def predict(self, Xte):
         """
         Inputs:
@@ -430,37 +446,45 @@ class NeuralNetwork():
         loss = np.sum(self.softMax(z, y)) / self.trainNum
         return loss
 
+    def getFinalDataLoss(self, beta, gamma,lossType):
+        C = self.classNum
+        y = self.toHotOne(self.Ytr, C)
+        L = len(self.hiddenLayer) + 1
+        dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
+        dataLoss = np.sum(dataLossOpt[lossType](self.zL, y)) / self.Xtr.shape[1]
+        return dataLoss
+
+
     def calLoss(self, beta, gamma, a, z, w, y, Lambda, lossType):
         L = len(self.hiddenLayer) + 1
         TOTAL = 0
         # cal data cost, lossType: hinge, msq, smx
         dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
-        #w[L].dot(self.ReLU(w[L-1].dot(a[0])))
         dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / a[0].shape[1]
-       # print dataLoss
-    
+        #print dataLoss
+       
+        self.dataLoss.append(dataLoss)
+        TOTAL += dataLoss
 
-       #self.dataLoss.append(dataLoss)
-       #TOTAL += dataLoss
+        # cal lagrange cost 
+        lagraLoss = np.sum(z[L] * Lambda)
+        self.lagraLoss.append(lagraLoss)
 
-       ## cal lagrange cost 
-       #lagraLoss = np.sum(z[L] * Lambda)
-       #self.lagraLoss.append(lagraLoss)
-       #
-       ## cal quaratic cost 
-       #for l in range(1,L):
-       #    aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))
-       #    self.aConstrLoss[l-1].append(aLoss)
-       #     
-       #    zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
-       #    self.zConstrLoss[l-1].append(zLoss)
-       #    TOTAL += aLoss + zLoss
+        # cal quaratic cost 
+        for l in range(1,L):
+          aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))
+          self.aConstrLoss[l-1].append(aLoss)
 
-       #zLastLoss = np.sum(self.zQuadraLoss(beta, w[L].dot(a[L-1]), z[L]))
-       #self.zConstrLoss[L-1].append(zLastLoss)
-       #TOTAL += zLastLoss
-       #self.totalLoss.append(TOTAL)
+          zLoss = np.sum(self.zQuadraLoss(beta, w[l].dot(a[l-1]), z[l]))
+          self.zConstrLoss[l-1].append(zLoss)
+          TOTAL += aLoss + zLoss
 
+        zLastLoss = np.sum(self.zQuadraLoss(beta, w[L].dot(a[L-1]), z[L]))
+        self.zConstrLoss[L-1].append(zLastLoss)
+        TOTAL += zLastLoss
+        self.totalLoss.append(TOTAL)    
+
+   
     def outputCost(self, beta, wa, z, y, isOne, Lambda): # can be improved
         return self.hingeLoss(z, y, isOne) + self.zQuadraLoss(beta, wa, z) + z * Lambda
 
