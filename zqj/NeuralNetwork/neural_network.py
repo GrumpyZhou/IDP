@@ -52,7 +52,6 @@ class NeuralNetwork():
             w.append(data['w1'])
             w.append(data['w2'])
         self.W = w
-        print len(w)
 
     def initNetwork(self, Xtr, classNum, hiddenLayer, epsilon, initW):
         """ 
@@ -64,21 +63,15 @@ class NeuralNetwork():
         L = len(hiddenLayer)
         a = [Xtr]
         z = [np.zeros((0))]
-
-        if initW != None:
-            w = initW
-        else:
-            w = [np.zeros((0))]
-            for l in range(0, L):
-                w.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
-            w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))
-            
+	w = [np.zeros((0))]
         for l in range(0, L):
+            w.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
             z.append(w[l+1].dot(a[l]))
             a.append(self.ReLU(z[l+1]))
+
+        w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))            
         z.append(w[L+1].dot(a[L]))
-            
-        return a, z, w
+	return a, z, w
 
     def initNetworkRandom(self, trainNum, classNum, hiddenLayer, epsilon):
         """ 
@@ -201,8 +194,11 @@ class NeuralNetwork():
         a, z, w = self.initNetwork(self.Xtr, C , self.hiddenLayer, self.epsilon, initW)   
         Lambda = np.zeros_like(z[L])
         y = self.toHotOne(self.Ytr, C)
+      
+        print 'train options:\nlossType:%s'%lossType
+        print 'minMethod:%s tau:%f ite:%d'%( minMethod, tau, ite)
 
-        # ADMM Update
+	# ADMM Update
         w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda)
             
         # Save the W to network
@@ -284,7 +280,6 @@ class NeuralNetwork():
         - Yte: A numpy array containing predicted labels of input images
         """
         w = self.W
-        print w[1].shape
         z = w[1].dot(Xte)
         for l in range(1,len(self.hiddenLayer)+1):
             z = w[l+1].dot(self.ReLU(z))
@@ -414,7 +409,6 @@ class NeuralNetwork():
         zL_s = np.copy(waL) - Lambda / (2 * beta)
         zL_s[zL_s > 0] = 0
         lossL_s = self.outputCost(beta, waL, zL_s, y, 0, Lambda)
-        #print self.hingeLoss(zL_s, y, 0) == np.sum(self.hinge(zL_s, y))
 
         # zi > 0
         zL_b = waL - (1 + Lambda) / (2 * beta)
@@ -461,7 +455,6 @@ class NeuralNetwork():
         # cal data cost, lossType: hinge, msq, smx
         dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
         dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / a[0].shape[1]
-        #print dataLoss
        
         self.dataLoss.append(dataLoss)
         TOTAL += dataLoss
