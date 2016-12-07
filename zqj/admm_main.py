@@ -34,15 +34,15 @@ print '\n\nTesting date:  %s' % time.strftime("%x")
 mnistDir = "NeuralNetwork/MnistData"
 X_train,Y_train,X_test,Y_test = getMnistData(mnistDir)
 
-(trNum,teNum) = (6000,1000)
+(trNum,teNum) = (60000,10000)
 i = 0
 X_tr, X_te, Y_tr, Y_te = getMiniPatch(X_train, Y_train, X_test, Y_test, trNum, teNum, 1)
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
 
 # Initialize networkfrom datetime import datetime, date, time
-hiddenLayer = [300,150]
+hiddenLayer = [500]
 classNum = 10 
-epsilon= 0.0001 
+epsilon= 0.00001 
 network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
 
 # Train param
@@ -52,7 +52,7 @@ iterNum = 120
 hasLambda = False
 calLoss = False
 
-print 'Config: epsilon:%f iter:%d '%(epsilon,iterNum)
+print 'Config: lambda:%s epsilon:%f iter:%d '%(hasLambda,epsilon,iterNum)
 """ 
 Input:
 weightConsWeight, activConsWeight
