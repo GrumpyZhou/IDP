@@ -173,13 +173,12 @@ class NeuralNetwork():
             # - a: activation, z: output, w: weight
             a, z, w = self.initNetwork(Xtr, C, self.hiddenLayer, self.epsilon, w)  
             #print self.dataLoss[len(self.dataLoss)-1]
-            print np.max(w[L])
-            
+            print np.max(w[L]) 
         
         self.W = w
         self.zL = z[L]
     
-    def train2(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
         C = self.classNum
@@ -203,74 +202,8 @@ class NeuralNetwork():
             
         # Save the W to network
         self.W = w
-        self.zL = z[L]
-        
-    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
-
-
-        # Initialization 
-        # - C: number of classes, N: number of training images, L: number of layers(including output layer)
-        C = self.classNum
-        N = self.trainNum
-        L = len(self.hiddenLayer) + 1
-        
-        # - beta,gama: penalty coefficiencies
-        beta = 1.0 * weightConsWeight 
-        gamma = 1.0 * activConsWeight
-
-        # - a: activation, z: output, w: weight
-
-        a, z, w = self.initNetwork(self.Xtr, C, self.hiddenLayer, self.epsilon, initW)   
-        Lambda = np.zeros_like(z[L])
-        
-        # Transform y to hotone representation
-        y = self.toHotOne(self.Ytr, C) 
-               
-        # Main part of ADMM updates
-        for k in range(iterNum):
-            # Walk through 1~L-1 layer network
-            for l in range(1, L):
-                # w update
-                #w[l] = np.linalg.lstsq(a[l-1].T,z[l].T)[0].T
-                w[l] = z[l].dot(np.linalg.pinv(a[l-1]))
-               
-                # a update
-                wNtr = w[l+1].T
-                a[l] = np.linalg.inv(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0])).dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l])) 
-                #a[l] = np.linalg.lstsq(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0]),np.identity(wNtr.shape[0]))[0].T.dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l])) 
-
-                
-                # z update
-                z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
-                                         
-            # L-layer
-            # w update
-            w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
-            
-            # zL update
-            waL =  w[L].dot(a[L-1])
-
-            """ lossType: hinge, msq, smx """
-            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
-            #z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= None, tau=None, ite=None)
-            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= minMethod, tau=0.01 , ite= 10)
-
-            # lambda update
-            if hasLambda:
-               Lambda += beta * (z[L] - waL)
-            
-            # Update beta, gamma
-            beta *= 1
-            gamma *= 1
-            
-            # Calculate total loss
-            if calLoss:
-                self.calLoss(beta, gamma, a, z, w, y, Lambda, lossType)
-
-        # Save the W to network
-        self.W = w
-        self.zL = z[L]
-   
+        self.zL = z[L]     
+      
     def predict(self, Xte):
         """
         Inputs:

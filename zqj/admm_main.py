@@ -34,13 +34,13 @@ print '\n\nTesting date:  %s' % time.strftime("%x")
 mnistDir = "NeuralNetwork/MnistData"
 X_train,Y_train,X_test,Y_test = getMnistData(mnistDir)
 
-(trNum,teNum) = (6000,1000)
+(trNum,teNum) = (1000,500)
 i = 0
 X_tr, X_te, Y_tr, Y_te = getMiniPatch(X_train, Y_train, X_test, Y_test, trNum, teNum, 1)
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
 
 # Initialize networkfrom datetime import datetime, date, time
-hiddenLayer = [300,150]
+hiddenLayer = [1000]
 classNum = 10 
 epsilon= 0.0001 
 network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
@@ -48,7 +48,7 @@ network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
 # Train param
 weightConsWeight = 10
 activConsWeight = 15
-iterNum = 120
+iterNum = 50
 hasLambda = False
 calLoss = False
 
@@ -65,7 +65,7 @@ tau, ite:   if lossType is 'smx', the step size and iteration of gradient descen
             default: tau=0.01, ite=25; 
 """
 tic = time.time()
-network.train2(weightConsWeight, activConsWeight, iterNum, hasLambda, 
+network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, iterNum, hasLambda, 
                               calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
