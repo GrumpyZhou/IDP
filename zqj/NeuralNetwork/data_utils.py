@@ -1,6 +1,20 @@
 import os
 import struct
 import numpy as np
+import datetime
+
+
+def saveWeight(w, path='test/saved_weight'):
+    today = datetime.datetime.now().strftime ("%Y%m%d")
+    fpath = os.path.join(path,'weight_%s.npy' % today)
+    print fpath
+    np.save(fpath, w)
+    print 'Weight saved in %s'%fpath
+    
+def loadWeight(self, path='test/saved_weight/weight.npy'):
+    print 'Load weight from %s'%path
+    w = np.load(path)
+    return w.tolist()
 
 def getMnistData(path):
     
