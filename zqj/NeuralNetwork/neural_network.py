@@ -40,19 +40,8 @@ class NeuralNetwork():
 
         print "Initializing a neural network with : ", len(hiddenLayer)," hidden layers, hidden layer dimension:", hiddenLayer
         
-
-    def saveWeight(self):
-        w = self.W
-        today = datetime.datetime.now().strftime ("%Y%m%d")
-        np.savez('test/saved_weight/weight %s.npz' % today, w1=w[1], w2=w[2])
-
-    def loadWeight(self, path=None):
-        w = [0]
-        with np.load("weight.npz") as data:
-            w.append(data['w1'])
-            w.append(data['w2'])
-        self.W = w
-
+    
+    '''Initialization'''
     def initNetwork(self, Xtr, classNum, hiddenLayer, epsilon, initW):
         """ 
         Return:
@@ -100,54 +89,21 @@ class NeuralNetwork():
         w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))
         z.append(epsilon*np.random.randn(classNum, trainNum)) 
         return a, z, w
-
-    def admmUpdate(self, y, a, z, w, L, iter, beta, gamma, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda = None):
-        # One ADMM updates
-        for i in range(iter):
-            t1 = time.time()
-            
-            # Walk through 1~L-1 layer network
-            for l in range(1, L):
-                # w update
-                #w[l] = np.linalg.lstsq(a[l-1].T,z[l].T)[0].T
-                w[l] = z[l].dot(np.linalg.pinv(a[l-1]))                
-               
-                # a update
-                wNtr = w[l+1].T
-                a[l] = np.linalg.inv(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0])).dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l]))   
-                #a[l] = np.linalg.lstsq(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0]),np.identity(wNtr.shape[0]))[0].T.dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l])) 
-               
-                # z update
-                z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
-                           
-            # L-layer
-            # w update
-            #w[L] = np.linalg.lstsq(a[L-1].T,z[L].T)[0].T            
-            w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
-            
-            # zL update
-            waL =  w[L].dot(a[L-1])
-
-            #print 'Train model: lossType %s, minMethod %s', (lossType, minMethod)
-            """ lossType: hinge, msq, smx """
-            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
-            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= minMethod, tau=tau , ite=ite)
-
-            # lambda update
-            if hasLambda:
-               Lambda += beta * (z[L] - waL)
-            
-            # Update beta, gamma
-            beta *= 1
-            gamma *= 1
-            
-            # Calculate total loss
-            if calLoss:
-                self.calLoss(beta, gamma, a, z, w, y, Lambda, lossType)
-
-        return w, Lambda
-
+    
+    '''Trainning'''
     def train(self, train, weightConsWeight, activConsWeight, iterOutNum, iterInNum, hasLambda, calLoss=False, batchSize=0, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+        """ 
+        Input:
+        weightConsWeight, activConsWeight
+        iterNum:    iteration to perform Admm updates
+        hasLambda:  whether include Lambda update
+        lossType:   one of {'hinge', 'msq', 'smx'}, default is 'smx'
+        minMethod:  if lossType is 'smx', the method to minimize the zLastUpdate has to be specified (for it's not in closed form), 
+                    it can be one of {'prox','gd','newton'}, default is 'prox';
+        tau, ite:   if lossType is 'smx', the step size and iteration of gradient descent/proximal gradient have to be specified, 
+                    default: tau=0.01, ite=25; 
+        """
+
         
         #Xtr, Ytr = train.images, train.labels
         Xtr, Ytr = train.nextBatch(batchSize)
@@ -184,7 +140,7 @@ class NeuralNetwork():
         
         self.W = w
         self.zL = z[L]
-    
+       
     def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
@@ -211,6 +167,7 @@ class NeuralNetwork():
         self.W = w
         self.zL = z[L]     
       
+    '''Prediction'''
     def predict(self, Xte):
         """
         Inputs:
@@ -227,151 +184,14 @@ class NeuralNetwork():
         return  np.argmax(y, axis=0), y
 
     def predictByFeed(self, Xte, w):
-        
         z = w[1].dot(Xte)
         for l in range(1,len(self.hiddenLayer)+1):
             z = w[l+1].dot(self.ReLU(z))
         y = z
         return  np.argmax(y, axis=0), y
 
-   
-    def zUpdate(self, beta, gamma, wa, al):
-        # z_i < 0
-        z_s = np.copy(wa)
-        z_s[z_s > 0] = 0
-        loss_s = self.quadraCost(beta, gamma, al, wa, z_s) # !!
 
-        # z_i > 0 
-        z_b = (gamma * al + beta * wa) / (beta + gamma)
-        z_b[z_b < 0] = 0
-        loss_b = self.quadraCost(beta, gamma, al, wa, z_b)
-        
-        z_s[loss_s > loss_b] = z_b[loss_s > loss_b]
-        
-        return np.copy(z_s)
-
-    def zLastUpdateWithSoftmax(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
-        zL = np.zeros(waL.shape)
-        if method == 'gd':
-           zL = self.minZWithGD(beta, waL, y, Lambda, tau, ite)
-           
-        if method == 'prox':
-           zL = self.minZWithProx(beta, waL, y, Lambda, tau, ite)
-
-        if method == 'newton':
-           zL = self.minZWithNewton(beta, waL, y, Lambda, tau, ite)
-        return zL
-
-    def minZWithNewton(self, beta, waL, y, Lambda, tau, ite):
-        zL = np.copy(waL)  
-        N = zL.shape[1] 
-        
-        for i in range(ite):
-            # calculate probabilities
-            #print zL            
-            zExp = np.exp(zL) 
-            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
-
-            # calculate gradient of z
-            dLdz = (zProb - y)  + 2 * beta * (zL - waL)  + Lambda
-            diag = zProb*(1-zProb)
-            H = np.zeros((zL.shape[0],zL.shape[0]))
-            for i in range(0,zL.shape[1]):
-                pi =  zProb[:,i].reshape(zL.shape[0],1);
-                dLdzi = -1 * pi.dot(pi.T);
-                np.fill_diagonal(dLdzi,diag[:,i])
-                H += dLdzi
-                
-            H = H / N + 2 * beta * np.identity(zL.shape[0])
-
-            # update
-            zL = zL - tau * np.linalg.inv(H).dot(dLdz)
-        return zL
-
-
-    def minZWithProx(self, beta, waL, y, Lambda, tau, ite):
-        zL = np.copy(waL) 
-        N = zL.shape[1]         
-        
-        for i in range(ite):
-            #zL = np.zeros(waL.shape)
-            # calculate probabilities
-            zExp = np.exp(zL) 
-            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
-
-            # calculate gradient of z
-            dLdz = (zProb - y)
-            v = zL - tau * (dLdz)
-
-            # update
-            zL = (2 * tau * beta * waL - tau * Lambda + v) / (1 + 2 * tau * beta)
-        return zL
-
-
-
-    def minZWithGD(self, beta, waL, y, Lambda, step, ite):
-        #zL = np.zeros(waL.shape)
-        zL = np.copy(waL)    
-        # minimize with gradient descent
-        for i in range(ite):
-            # calculate probabilities
-            zExp = np.exp(zL) 
-            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
-
-            # calculate gradient of z
-            dLdz = zProb - y
-            dEdz = dLdz + Lambda + 2 * beta * (zL - waL)
-
-            # descent
-            zL = zL - step * dEdz
-        return zL
-
-
-    def zLastUpdateWithHinge(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
-
-        zL = np.zeros(waL.shape)
-        # y_i = 1
-        # zi > 1
-        zL_b = np.copy(waL) - Lambda / (2 * beta)
-        zL_b[zL_b < 1] = 1
-        lossL_b = self.outputCost(beta, waL, zL_b, y, 1, Lambda)
-        
-        # zi < 1
-        zL_s = waL +  (1 - Lambda) / (2 * beta)
-        zL_s[zL_s > 1] = 1
-        lossL_s = self.outputCost(beta, waL, zL_s, y, 1, Lambda)
-        
-        zL_s[lossL_s > lossL_b] = zL_b[lossL_s > lossL_b]
-        zL[y == 1] = zL_s[y == 1]
-
-        # y_i = 0
-        # zi < 0
-        zL_s = np.copy(waL) - Lambda / (2 * beta)
-        zL_s[zL_s > 0] = 0
-        lossL_s = self.outputCost(beta, waL, zL_s, y, 0, Lambda)
-
-        # zi > 0
-        zL_b = waL - (1 + Lambda) / (2 * beta)
-        zL_b[zL_b < 0] = 0
-        lossL_b = self.outputCost(beta, waL, zL_b, y, 0, Lambda)
-            
-        zL_s[lossL_s > lossL_b] = zL_b[lossL_s > lossL_b]
-        zL[y == 0] = zL_s[y == 0] 
-        return zL
-    
-    def zLastUpdateWithMeanSq(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
-        return (y + beta * waL)/ (1 + beta) - 0.5 * Lambda / (1 + beta)
-
-    def meanSqrLoss(self, z, y):
-        return np.sum(z - y)
-
-    def toHotOne(self, Y, C):
-        """ Construct Hot-one representation of Y """
-        y = np.zeros((C, Y.shape[0]))
-        for i in range(0,Y.shape[0]):
-            y[Y[i],i] = 1
-        return y
-
+    ''' Loss calculation for network'''
     def softMaxLossTest(self, w):
         y = self.toHotOne(self.Ytr, self.classNum) 
         z = w[1].dot(self.Xtr)
@@ -415,10 +235,175 @@ class NeuralNetwork():
         zLastLoss = np.sum(self.zQuadraLoss(beta, w[L].dot(a[L-1]), z[L]))
         self.zConstrLoss[L-1].append(zLastLoss)
         TOTAL += zLastLoss
-        self.totalLoss.append(TOTAL)    
+        self.totalLoss.append(TOTAL)   
 
+    '''ADMM Update logic'''
+    def admmUpdate(self, y, a, z, w, L, iter, beta, gamma, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda = None):
+        # One ADMM updates
+        for i in range(iter):
+            t1 = time.time()
+            
+            # Walk through 1~L-1 layer network
+            for l in range(1, L):
+                # w update
+                w[l] = z[l].dot(np.linalg.pinv(a[l-1]))                
+               
+                # a update
+                wNtr = w[l+1].T
+                a[l] = np.linalg.inv(beta * wNtr.dot(w[l+1]) + gamma * np.identity(wNtr.shape[0])).dot(beta * wNtr.dot(z[l+1]) + gamma * self.ReLU(z[l]))   
+               
+                # z update
+                z[l] = self.zUpdate(beta, gamma, w[l].dot(a[l-1]), a[l])
+                           
+            # L-layer
+            # w update
+            w[L] = z[L].dot(np.linalg.pinv(a[L-1]))
+            
+            # zL update
+            waL =  w[L].dot(a[L-1])
+
+            #print 'Train model: lossType %s, minMethod %s', (lossType, minMethod)
+            """ lossType: hinge, msq, smx """
+            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
+            z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= minMethod, tau=tau , ite=ite)
+
+            # lambda update
+            if hasLambda:
+               Lambda += beta * (z[L] - waL)
+            
+            # Update beta, gamma
+            beta *= 1
+            gamma *= 1
+            
+            # Calculate total loss
+            if calLoss:
+                self.calLoss(beta, gamma, a, z, w, y, Lambda, lossType)
+
+        return w, Lambda
    
-    def outputCost(self, beta, wa, z, y, isOne, Lambda): # can be improved
+    def zUpdate(self, beta, gamma, wa, al):
+        '''Update of zl excluding the output layer(zL)'''
+        # z_i < 0
+        z_s = np.copy(wa)
+        z_s[z_s > 0] = 0
+        loss_s = self.quadraCost(beta, gamma, al, wa, z_s) # !!
+
+        # z_i > 0 
+        z_b = (gamma * al + beta * wa) / (beta + gamma)
+        z_b[z_b < 0] = 0
+        loss_b = self.quadraCost(beta, gamma, al, wa, z_b)
+        
+        z_s[loss_s > loss_b] = z_b[loss_s > loss_b]
+        
+        return np.copy(z_s)
+
+    def zLastUpdateWithSoftmax(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
+        zL = np.zeros(waL.shape)
+        if method == 'gd':
+           zL = self.minZWithGD(beta, waL, y, Lambda, tau, ite)
+           
+        if method == 'prox':
+           zL = self.minZWithProx(beta, waL, y, Lambda, tau, ite)
+
+        if method == 'newton':
+           zL = self.minZWithNewton(beta, waL, y, Lambda, tau, ite)
+        return zL
+
+    def minZWithNewton(self, beta, waL, y, Lambda, tau, ite):
+        zL = np.copy(waL)  
+        N = zL.shape[1] 
+        
+        for i in range(ite):
+            # calculate probabilities
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = (zProb - y)  + 2 * beta * (zL - waL)  + Lambda
+            diag = zProb*(1-zProb)
+            H = np.zeros((zL.shape[0],zL.shape[0]))
+            for i in range(0,zL.shape[1]):
+                pi =  zProb[:,i].reshape(zL.shape[0],1);
+                dLdzi = -1 * pi.dot(pi.T);
+                np.fill_diagonal(dLdzi,diag[:,i])
+                H += dLdzi
+                
+            H = H / N + 2 * beta * np.identity(zL.shape[0])
+
+            # update
+            zL = zL - tau * np.linalg.inv(H).dot(dLdz)
+        return zL
+
+    def minZWithProx(self, beta, waL, y, Lambda, tau, ite):
+        zL = np.copy(waL) 
+        N = zL.shape[1]         
+        
+        for i in range(ite):
+            # calculate probabilities
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = (zProb - y)
+            v = zL - tau * (dLdz)
+
+            # update
+            zL = (2 * tau * beta * waL - tau * Lambda + v) / (1 + 2 * tau * beta)
+        return zL
+
+    def minZWithGD(self, beta, waL, y, Lambda, step, ite):
+        zL = np.copy(waL)    
+        # minimize with gradient descent
+        for i in range(ite):
+            # calculate probabilities
+            zExp = np.exp(zL) 
+            zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
+
+            # calculate gradient of z
+            dLdz = zProb - y
+            dEdz = dLdz + Lambda + 2 * beta * (zL - waL)
+
+            # descent
+            zL = zL - step * dEdz
+        return zL
+
+    def zLastUpdateWithHinge(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
+        zL = np.zeros(waL.shape)
+        # y_i = 1
+        # zi > 1
+        zL_b = np.copy(waL) - Lambda / (2 * beta)
+        zL_b[zL_b < 1] = 1
+        lossL_b = self.outputCost(beta, waL, zL_b, y, 1, Lambda)
+        
+        # zi < 1
+        zL_s = waL +  (1 - Lambda) / (2 * beta)
+        zL_s[zL_s > 1] = 1
+        lossL_s = self.outputCost(beta, waL, zL_s, y, 1, Lambda)
+        
+        zL_s[lossL_s > lossL_b] = zL_b[lossL_s > lossL_b]
+        zL[y == 1] = zL_s[y == 1]
+
+        # y_i = 0
+        # zi < 0
+        zL_s = np.copy(waL) - Lambda / (2 * beta)
+        zL_s[zL_s > 0] = 0
+        lossL_s = self.outputCost(beta, waL, zL_s, y, 0, Lambda)
+
+        # zi > 0
+        zL_b = waL - (1 + Lambda) / (2 * beta)
+        zL_b[zL_b < 0] = 0
+        lossL_b = self.outputCost(beta, waL, zL_b, y, 0, Lambda)
+            
+        zL_s[lossL_s > lossL_b] = zL_b[lossL_s > lossL_b]
+        zL[y == 0] = zL_s[y == 0] 
+        return zL
+    
+    def zLastUpdateWithMeanSq(self, beta, waL, y, Lambda, method=None, tau=None, ite=None):
+        return (y + beta * waL)/ (1 + beta) - 0.5 * Lambda / (1 + beta)
+
+    
+    '''Helping functions for clearer readability'''
+    def outputCost(self, beta, wa, z, y, isOne, Lambda): # Used only by Hinge, can be improved
         return self.hingeLoss(z, y, isOne) + self.zQuadraLoss(beta, wa, z) + z * Lambda
 
     def quadraCost(self, beta, gamma, a, wa, z):
@@ -429,22 +414,7 @@ class NeuralNetwork():
     
     def aQuadraLoss(self, gamma, a, z):
         return gamma * (a - self.ReLU(z)) ** 2 
-    
-    def ReLU(self, x):
-        """ Evaluate Rectified Linear Unit """
-        xn = np.copy(x)
-        xn[xn < 0] = 0
-        return xn
-
-    def hinge(self, z, y): # to replace the old one
-        loss = np.zeros(y.shape)
-        loss[y == 0] = np.maximum(z,loss)[y == 0]
-        loss[y == 1] = np.maximum(1-z,loss)[y == 1]
-        return loss
-
-    def meanSqr(self, z, y):
-        return (z - y) ** 2
-    
+        
     def hingeLoss(self, z, y, isOne): # can be improved
         """ Evaluate Hinge Loss """
         zn = np.copy(z)
@@ -455,6 +425,8 @@ class NeuralNetwork():
             zn[y == 1] = np.maximum(1-zn,x)[y == 1]
         return zn
 
+
+    '''Different tyeps of loss functions'''
     def softMax(self, z, y):
         """ Evaluate Multiclass SVM Loss """ 
         loss = np.zeros(y.shape)
@@ -462,4 +434,27 @@ class NeuralNetwork():
         zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True) 
         loss = -1 * y * np.log(zProb)
         return loss
-   
+ 
+    def meanSqr(self, z, y):
+        return (z - y) ** 2
+
+    def hinge(self, z, y): # to replace hingeLoss
+        loss = np.zeros(y.shape)
+        loss[y == 0] = np.maximum(z,loss)[y == 0]
+        loss[y == 1] = np.maximum(1-z,loss)[y == 1]
+        return loss
+
+    def ReLU(self, x):
+        """ Evaluate Rectified Linear Unit """
+        xn = np.copy(x)
+        xn[xn < 0] = 0
+        return xn
+
+    def toHotOne(self, Y, C):
+        """ Construct Hot-one representation of Y """
+        y = np.zeros((C, Y.shape[0]))
+        for i in range(0,Y.shape[0]):
+            y[Y[i],i] = 1
+        return y
+    
+
