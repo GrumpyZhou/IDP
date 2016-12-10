@@ -16,17 +16,6 @@ def loadWeight(self, path='test/saved_weight/weight.npy'):
     w = np.load(path)
     return w.tolist()
 
-def getMnistData(path):
-    
-    Xtr,Ytr = read("training",path)
-    Xte,Yte = read("testing",path)
-    Xtr = Xtr.astype(np.float64)
-    Ytr = Ytr.astype(np.int64)
-    Xte = Xte.astype(np.float64)
-    Yte = Yte.astype(np.int64)
-
-    return Xtr,Ytr,Xte,Yte
-
 def read(dataset = "training", path="."):
 
     if dataset is "training":
@@ -47,7 +36,6 @@ def read(dataset = "training", path="."):
         magic, num, rows, cols = struct.unpack(">IIII", fimg.read(16))
         img = np.fromfile(fimg, dtype=np.uint8).reshape(len(lbl), rows, cols)
     return img,lbl
-
 
 def getMnistDataSets(path, valSize = 0, reshape=True, transpose=True):
     
@@ -128,4 +116,15 @@ def show(image):
     ax.yaxis.set_ticks_position('left')
     pyplot.show()
 
+''' NOT USED ANY MORE
+def getMnistData(path):
+    
+    Xtr,Ytr = read("training",path)
+    Xte,Yte = read("testing",path)
+    Xtr = Xtr.astype(np.float64)
+    Ytr = Ytr.astype(np.int64)
+    Xte = Xte.astype(np.float64)
+    Yte = Yte.astype(np.int64)
 
+    return Xtr,Ytr,Xte,Yte
+'''

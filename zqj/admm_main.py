@@ -7,40 +7,23 @@ from matplotlib import gridspec
 from NeuralNetwork.data_utils import *
 from NeuralNetwork.neural_network import *
 
-def getMiniPatch(X_train, Y_train, X_test, Y_test, trNum, teNum, transposed):
-    # Subsample the data for more efficient code execution 
-    trainNum = trNum
-    mask = range(trainNum)
-    Xtr = X_train[mask]
-    Ytr = Y_train[mask]
-    
-    testNum = teNum
-    mask = range(testNum)
-    Xte = X_test[mask]
-    Yte = Y_test[mask]
-    
-    # Reshape the image data into rows
-    Xtr = np.reshape(Xtr, (Xtr.shape[0], -1))
-    Xte = np.reshape(Xte, (Xte.shape[0], -1))
-    
-    return Xtr.T, Xte.T, Ytr, Yte
-
-
-
-
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 # Load Mnist Data
+(trNum,teNum) = (100,100)
 mnistDir = "NeuralNetwork/MnistData"
-X_train,Y_train,X_test,Y_test = getMnistData(mnistDir)
+datasets = getMnistDataSets(mnistDir,valSize=0)
+train = datasets['train']
+test = datasets['train']
 
-(trNum,teNum) = (60000,10000)
-i = 0
-X_tr, X_te, Y_tr, Y_te = getMiniPatch(X_train, Y_train, X_test, Y_test, trNum, teNum, 1)
+X_tr, Y_tr = train.images[:,range(trNum)], train.labels[range(trNum)]
+X_te, Y_te = test.images[:,range(teNum)], test.labels[range(teNum)]
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
 
+i = 0
+
 # Initialize networkfrom datetime import datetime, date, time
-hiddenLayer = [500]
+hiddenLayer = [300]
 classNum = 10 
 epsilon= 0.00001 
 network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
@@ -53,18 +36,8 @@ hasLambda = False
 calLoss = False
 
 print 'Config: lambda:%s epsilon:%f iter:%d '%(hasLambda,epsilon,iterNum)
-""" 
-Input:
-weightConsWeight, activConsWeight
-iterNum:    iteration to perform Admm updates
-hasLambda:  whether include Lambda update
-lossType:   one of {'hinge', 'msq', 'smx'}, default is 'smx'
-minMethod:  if lossType is 'smx', the method to minimize the zLastUpdate has to be specified (for it's not in closed form), 
-            it can be one of {'prox','gd','newton'}, default is 'prox';
-tau, ite:   if lossType is 'smx', the step size and iteration of gradient descent/proximal gradient have to be specified, 
-            default: tau=0.01, ite=25; 
-"""
 tic = time.time()
+
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, iterNum, hasLambda, 
                               calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25)
 toc = time.time()
@@ -75,24 +48,6 @@ print 'Prediction accuracy: %f' %np.mean(Ypred == Y_te)
 
 dataLoss = network.getFinalDataLoss(beta=weightConsWeight, gamma=activConsWeight,lossType='smx')
 print 'Final trained data loss: %f' % dataLoss
-
-#print 'Saving weight...'
-#network.saveWeight()
-
-'''
-network2 = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
-tic = time.time()
-network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, iterNum, hasLambda, 
-                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25)
-toc = time.time()
-print 'Total training time: %fs' % (toc - tic)
-# Predict
-Ypred,z = network.predict(X_te)
-print 'Prediction accuracy: %f' %np.mean(Ypred == Y_te)
-
-dataLoss = network.getFinalDataLoss(beta=weightConsWeight, gamma=activConsWeight,lossType='smx')
-print 'Final trained data loss: %f' % dataLoss
-'''
 
 # For visualization
 L = len(hiddenLayer)
