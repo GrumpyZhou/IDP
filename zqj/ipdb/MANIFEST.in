@@ -1,5 +1,0 @@
-include README.rst
-include manual_test.py
-include *.txt
-include AUTHORS
-recursive-include tests *.py

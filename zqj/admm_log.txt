@@ -79,3 +79,53 @@ minMethod:prox tau:0.010000 ite:25
 Total training time: 8697.556527s
 Prediction accuracy: 0.926700
 Final trained data loss: 0.267897
+
+Testing date:  12/07/16
+Xtr:  (784, 60000) Xte:  (784, 10000) Ytr:  (60000,) Yte:  (10000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [700]
+Config: lambda:False epsilon:0.000010 iter:100 
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+Total training time: 9140.162304s
+Prediction accuracy: 0.928200
+Final trained data loss: 0.341729
+nohup: ignoring input
+
+
+Testing date:  12/08/16
+Xtr:  (784, 60000) Xte:  (784, 10000) Ytr:  (60000,) Yte:  (10000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [500]
+Config: lambda:False epsilon:0.000010 iter:300 
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+Total training time: 19868.405211s
+Prediction accuracy: 0.947100
+Final trained data loss: 0.081749
+nohup: ignoring input
+
+
+Testing date:  12/08/16
+Xtr:  (784, 60000) Xte:  (784, 10000) Ytr:  (60000,) Yte:  (10000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [700]
+Config: lambda:False epsilon:0.000010 iter:300 
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+Total training time: 25443.208692s
+Prediction accuracy: 0.950900
+Final trained data loss: 0.081555
+nohup: ignoring input
+
+
+Testing date:  12/09/16
+Xtr:  (784, 60000) Xte:  (784, 10000) Ytr:  (60000,) Yte:  (10000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [1000]
+Config: lambda:False epsilon:0.000010 iter:300 
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+Total training time: 39887.677753s
+Prediction accuracy: 0.950200
+Final trained data loss: 0.081377
