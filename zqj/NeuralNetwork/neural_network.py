@@ -227,7 +227,9 @@ class NeuralNetwork():
         # cal lagrange cost 
         lagraLoss = np.sum(z[L] * Lambda)
         self.lagraLoss.append(lagraLoss)
-
+        
+        beta = 1.0
+        gamma = 1.0
         # cal quaratic cost 
         for l in range(1,L):
           aLoss = np.sum(self.aQuadraLoss(gamma, a[l], z[l]))
