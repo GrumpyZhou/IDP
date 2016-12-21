@@ -140,7 +140,7 @@ class NeuralNetwork():
         self.W = w
         self.zL = z[L]
        
-    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
         C = self.classNum
@@ -148,8 +148,8 @@ class NeuralNetwork():
         L = len(self.hiddenLayer) + 1
         
         # - beta,gama: penalty coefficiencies
-        beta = 1.0 * weightConsWeight 
-        gamma = 1.0 * activConsWeight
+        beta = growingStep * weightConsWeight 
+        gamma = growingStep * activConsWeight
 
         C = self.classNum
         a, z, w = self.initNetwork(self.Xtr, C , self.hiddenLayer, self.epsilon, initW)   
@@ -199,22 +199,28 @@ class NeuralNetwork():
         loss = np.sum(self.softMax(z, y)) / self.trainNum
         return loss
 
-    def getFinalDataLoss(self, Xtr, y, zL, beta, gamma,lossType):
+    def getFinalDataLoss(self, Xtr, y, w, beta, gamma,lossType):
         C = self.classNum
         #y = self.toHotOne(Ytr, C)
         L = len(self.hiddenLayer) + 1
+
+        z = w[1].dot(Xtr)
+        for l in range(1,len(self.hiddenLayer)+1):
+             z = w[l+1].dot(self.ReLU(z))
+             
         dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
-        dataLoss = np.sum(dataLossOpt[lossType](zL, y)) / Xtr.shape[1]
+        dataLoss = np.sum(dataLossOpt[lossType](z, y)) / Xtr.shape[1]
         return dataLoss
 
 
-    def calLoss(self, beta, gamma, a, z, w, y, Lambda, lossType):
+    def calLoss(self, Xtr, beta, gamma, a, z, w, y, Lambda, lossType):
         L = len(self.hiddenLayer) + 1
         TOTAL = 0
         # cal data cost, lossType: hinge, msq, smx
-        dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
-        dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / a[0].shape[1]
-       
+        #dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
+        #dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / a[0].shape[1]
+        
+        dataLoss = self.getFinalDataLoss(Xtr, y, w, beta, gamma,lossType)
         self.dataLoss.append(dataLoss)
         TOTAL += dataLoss
 
@@ -273,7 +279,7 @@ class NeuralNetwork():
             
             t3 = time.time()
             if i%10 == 0:
-                loss = self.getFinalDataLoss(Xtr, y, z[L], beta, gamma,lossType)
+                loss = self.getFinalDataLoss(Xtr, y, w, beta, gamma,lossType)
                 print 'iter %d loss:%f'%(i,loss)
                 #print 'iter %d t1:%fs t2:%fs loss:%f'%(i, t2-t1, t3 - t2, loss)
             
@@ -287,7 +293,7 @@ class NeuralNetwork():
             
             # Calculate total loss
             if calLoss:
-                self.calLoss(beta, gamma, a, z, w, y, Lambda, lossType)
+                self.calLoss(Xtr, beta, gamma, a, z, w, y, Lambda, lossType)
 
         return w, Lambda
    
