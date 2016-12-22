@@ -9,7 +9,7 @@ class NeuralNetwork():
     A neural network with L layers, for each layer the dimension of neurons is specified in Dim[],
     Dim[0] is later filled by the input dimension.
     """
-    def __init__(self, Xtr, Ytr, classNum, hiddenLayer, epsilon):
+    def __init__(self, train, validation, classNum, hiddenLayer, epsilon, batchSize=0, valSize=5000):
         """
         Input:
         - Xtr: A numpy array of shape (D, N) containing a minibatch of data
@@ -18,16 +18,18 @@ class NeuralNetwork():
         - hiddenLayer: A list specifys dimension of hidden layer
         - epsilon: The coefficient for initialize random weight matrix
         """
-        self.Xtr = Xtr
-        self.Ytr = Ytr
+        self.train = train
+        self.Xtr, self.Ytr = train.nextBatch(train.imgNum)
+        self.Xval, self.Yval = validation.nextBatch(valSize)
         self.classNum = classNum
-        self.trainNum = Xtr.shape[1]
+        self.batchSize = batchSize
         self.hiddenLayer = hiddenLayer
         self.epsilon = epsilon
         
         self.W = []
         self.zL = np.zeros((0))  
         
+        self.evalLoss = [] # evaluation energy
         self.totalLoss = [] # total cost
         self.dataLoss = [] # cost from loss function
         self.aConstrLoss = [] # cost from constraint a = h(z)
@@ -68,30 +70,10 @@ class NeuralNetwork():
         w.append(initW[L+1])            
         z.append(w[L+1].dot(a[L]))
 	return a, z, w
+        
 
-    def initNetworkRandom(self, trainNum, classNum, hiddenLayer, epsilon):
-        """ 
-        Return:
-        - a: Activation list for each layer [a0, a1, a2]
-        - z: A z list for each layer [0, z1, z2, z3]
-        - w: weight list for each layer  [0, w1, w2, w3]
-        """
-        L = len(self.hiddenLayer)
-        w = [np.zeros((0))]
-        a = [self.Xtr]
-        z = [np.zeros((0))]
-
-        for l in range(0, L):
-            w.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
-            z.append(epsilon*np.random.randn(hiddenLayer[l], trainNum))
-            a.append(epsilon*np.random.randn(hiddenLayer[l], trainNum))
-                
-        w.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))
-        z.append(epsilon*np.random.randn(classNum, trainNum)) 
-        return a, z, w
-    
     '''Trainning'''
-    def train(self, train, weightConsWeight, activConsWeight, growingStep, iterOutNum, iterInNum, hasLambda, calLoss=False, batchSize=0, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+    def trainWithMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterOutNum, iterInNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, evaluate=True, initW=None):
         """ 
         Input:
         weightConsWeight, activConsWeight
@@ -103,74 +85,85 @@ class NeuralNetwork():
         tau, ite:   if lossType is 'smx', the step size and iteration of gradient descent/proximal gradient have to be specified, 
                     default: tau=0.01, ite=25; 
         """
-
-        
+         
         #Xtr, Ytr = train.images, train.labels
-        Xtr, Ytr = train.nextBatch(batchSize)
-        
+        Xtr, Ytr = self.train.nextBatch(self.batchSize)
+       
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
-        C = self.classNum
-        N = batchSize
+        #N = batchSize
         L = len(self.hiddenLayer) + 1
-
-        # - beta,gama: penalty coefficiencies
-        beta = weightConsWeight 
-        gamma = activConsWeight
-
-        a, z, w = self.initNetwork(Xtr, C, self.hiddenLayer, self.epsilon, initW)   
+        
+        a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW)   
         Lambda = np.zeros_like(z[L])
                        
         # Main part of ADMM updates
         for k in range(iterOutNum): 
             # Transform y to hotone representation
-            y = self.toHotOne(Ytr, C)
+            y = self.toHotOne(Ytr, self.classNum)
+
+            # - beta,gama: penalty coefficiencies
+            beta = weightConsWeight 
+            gamma = activConsWeight
             
             # ADMM Update
-            #if k == iterOutNum-1:
-             #   iterInNum *= 2 
-            w, Lambda = self.admmUpdate(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda)
- 
+            w, Lambda = self.admmUpdate(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda, innerEval=False)
+            
+            # Do evaluation for each batch
+            if evaluate:
+                self.evaluate(w, lossType, dataType='train')
+            
             # Load new batch
-            Xtr, Ytr = train.nextBatch(batchSize)
+            Xtr, Ytr = self.train.nextBatch(self.batchSize)
             # - a: activation, z: output, w: weight
-            a, z, w = self.initNetwork(Xtr, C, self.hiddenLayer, self.epsilon, w)  
-            #print self.dataLoss[len(self.dataLoss)-1]
+            a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, w)  
+            
+            loss = self.getFinalDataLoss(Xtr, y, w, lossType)
+            print 'Outiter %d Final loss: %f' %(k, loss)
+
         
         self.W = w
         self.zL = z[L]
+
        
-    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, initW=None ):
+    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, evaluate=True, initW=None):
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
-        C = self.classNum
-        N = self.trainNum
         L = len(self.hiddenLayer) + 1
         
+        Xtr, Ytr = self.train.nextBatch(self.batchSize)
+
         # - beta,gama: penalty coefficiencies
         beta = weightConsWeight 
         gamma = activConsWeight
 
-        C = self.classNum
-        a, z, w = self.initNetwork(self.Xtr, C , self.hiddenLayer, self.epsilon, initW)   
+        a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW)   
         Lambda = np.zeros_like(z[L])
-        y = self.toHotOne(self.Ytr, C)
+        y = self.toHotOne(Ytr, self.classNum)
       
         print 'train options:\nlossType:%s'%lossType
         print 'minMethod:%s tau:%f ite:%d'%( minMethod, tau, ite)
 
 	# ADMM Update
-        w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda)
+        w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda, innerEval=evaluate)
             
         # Save the W to network
         self.W = w
         self.zL = z[L]     
 
     '''Validation'''
-    def evaluate(self, Xval, Yval, w, lossType):
-        print 'Evaluated loss:' % self.getFinalDataLoss(Xval, Yval, w, lossType)
-
-      
+    def evaluate(self, w, lossType, dataType='train'):
+        if dataType == 'train':
+            X = self.Xtr
+            Y = self.Ytr
+        else:
+            X = self.Xval
+            Y = self.Yval
+        y = self.toHotOne(Y, self.classNum)
+        loss = self.getFinalDataLoss(X, y, w, lossType)
+        self.evalLoss.append(loss)
+        print 'Evaluated loss: %f' % loss    
+        
     '''Prediction'''
     def predict(self, Xte):
         """
@@ -204,8 +197,6 @@ class NeuralNetwork():
         return loss
 
     def getFinalDataLoss(self, Xtr, y, w, lossType):
-        C = self.classNum
-        #y = self.toHotOne(Ytr, C)
         L = len(self.hiddenLayer) + 1
 
         z = w[1].dot(Xtr)
@@ -220,9 +211,6 @@ class NeuralNetwork():
     def calLoss(self, Xtr, beta, gamma, a, z, w, y, Lambda, lossType):
         L = len(self.hiddenLayer) + 1
         TOTAL = 0
-        # cal data cost, lossType: hinge, msq, smx
-        #dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
-        #dataLoss = np.sum(dataLossOpt[lossType](z[L], y)) / a[0].shape[1]
         
         dataLoss = self.getFinalDataLoss(Xtr, y, w, lossType)
         self.dataLoss.append(dataLoss)
@@ -249,7 +237,7 @@ class NeuralNetwork():
         self.totalLoss.append(TOTAL)   
 
     '''ADMM Update logic'''
-    def admmUpdate(self, y, a, z, w, L, iter, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda = None):
+    def admmUpdate(self, y, a, z, w, L, iter, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda=None, innerEval=False):
 
         Xtr = a[0]
         # One ADMM updates
@@ -280,30 +268,31 @@ class NeuralNetwork():
 
             #print 'Train model: lossType %s, minMethod %s', (lossType, minMethod)
             """ lossType: hinge, msq, smx """
-            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax }
+            zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax}
             z[L] = zLastUpdateOpt[lossType](beta, waL, y, Lambda, method= minMethod, tau=tau , ite=ite)
-            
-            t3 = time.time()
-            if i%20 == 0:
-                loss = self.getFinalDataLoss(Xtr, y, w, lossType)
-                print 'iter %d loss:%f'%(i,loss)
-                #print 'iter %d t1:%fs t2:%fs loss:%f'%(i, t2-t1, t3 - t2, loss)
             
             # lambda update
             if hasLambda:
-               Lambda += beta * (z[L] - waL)
-            
+                Lambda += beta * (z[L] - waL)
+
             # Update beta, gamma
             beta *= growingStep  
             gamma *= growingStep 
 
+            t3 = time.time()
+            if i % 10 == 0:
+                #loss = self.getFinalDataLoss(Xtr, y, w, lossType)
+                #print 'iter %d loss:%f'%(i,loss)
+                if innerEval:
+                    self.evaluate(w, lossType, dataType='val') 
+                #print 'iter %d t1:%fs t2:%fs loss:%f'%(i, t2-t1, t3 - t2, loss)
+                         
             # Calculate total loss
             if calLoss:
                 self.calLoss(Xtr, beta, gamma, a, z, w, y, Lambda, lossType)
-
-            loss = self.getFinalDataLoss(Xtr, y, w, lossType)
-            print 'Final loss: %f' % loss
-
+        
+        #loss = self.getFinalDataLoss(Xtr, y, w, lossType)
+        #print 'Final loss: %f' % loss
         return w, Lambda
    
     def zUpdate(self, beta, gamma, wa, al):

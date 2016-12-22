@@ -10,23 +10,23 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 # Load Mnist Data
-(trNum,teNum) = (500,100)
+(trSize, teSize, valSize) = (5000, 100, 5000)
+
 mnistDir = "NeuralNetwork/MnistData"
-datasets = getMnistDataSets(mnistDir,valSize=0)
+datasets = getMnistDataSets(mnistDir,valSize=valSize)
 train = datasets['train']
 test = datasets['test']
+validation = datasets['validation']
 
-X_tr, Y_tr = train.images[:,range(trNum)], train.labels[range(trNum)]
-X_te, Y_te = test.images[:,range(teNum)], test.labels[range(teNum)]
+X_tr, Y_tr = train.images[:,range(trSize)], train.labels[range(trSize)]
+X_te, Y_te = test.images[:,range(teSize)], test.labels[range(teSize)]
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
-
-i = 0
 
 # Initialize networkfrom datetime import datetime, date, time
 hiddenLayer = [300]
 classNum = 10 
 epsilon= 0.00001 
-network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
+network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
 weightConsWeight = 0.001
@@ -39,9 +39,8 @@ calLoss = False
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
 print 'weightConsWeight:%f activConsWeight:%f growingStep:%f'%(weightConsWeight,activConsWeight,growingStep)
 tic = time.time()
-
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, 
-                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25)
+                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, evaluate=False)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 # Predict

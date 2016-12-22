@@ -99,7 +99,7 @@ class DataSet():
             self.index = batchSize
             assert batchSize <= self.imgNum
         end = self.index 
-        print start, end
+        #print start, end
         return self.images[:,range(start,end)], self.labels[start:end]
 
 def show(image):
