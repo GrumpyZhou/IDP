@@ -10,7 +10,7 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 # Load Mnist Data
-(trNum,teNum) = (500,500)
+(trNum,teNum) = (500,100)
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=0)
 train = datasets['train']
@@ -31,10 +31,10 @@ network = NeuralNetwork(X_tr, Y_tr, classNum, hiddenLayer, epsilon)
 # Train param
 weightConsWeight = 0.001
 activConsWeight = 0.001
-growingStep = 1.1
-iterNum = 100
-hasLambda = False
-calLoss = True
+growingStep = 1.08
+iterNum = 120
+hasLambda = True 
+calLoss = False
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
 print 'weightConsWeight:%f activConsWeight:%f growingStep:%f'%(weightConsWeight,activConsWeight,growingStep)

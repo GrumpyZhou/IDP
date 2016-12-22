@@ -129,3 +129,77 @@ minMethod:prox tau:0.010000 ite:25
 Total training time: 39887.677753s
 Prediction accuracy: 0.950200
 Final trained data loss: 0.081377
+
+
+Testing date:  12/21/16
+Xtr:  (784, 60000) Xte:  (784, 10000) Ytr:  (60000,) Yte:  (10000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [300]
+Config: lambda:True epsilon:0.000010 iter:100
+weightConsWeight:0.001000 activConsWeight:0.001000 growingStep:1.100000
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+iter 0 loss:2.302585
+iter 10 loss:1.691993
+iter 20 loss:1.070772
+iter 30 loss:0.788869
+iter 40 loss:0.644674
+iter 50 loss:0.556459
+iter 60 loss:0.495203
+iter 70 loss:0.449250
+iter 80 loss:0.412988
+iter 90 loss:0.383376
+Total training time: 4785.277750s
+Prediction accuracy: 0.929600
+nohup: ignoring input
+nohup: ignoring input
+
+
+Testing date:  12/22/16
+Xtr:  (784, 60000) Xte:  (784, 10000) Ytr:  (60000,) Yte:  (10000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [500]
+Config: lambda:True epsilon:0.000010 iter:300
+weightConsWeight:0.001000 activConsWeight:0.001000 growingStep:1.100000
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+iter 0 loss:2.302585
+iter 20 loss:1.049382
+iter 40 loss:0.629351
+iter 60 loss:0.481972
+iter 80 loss:0.400173
+iter 100 loss:0.345924
+iter 120 loss:0.306483
+iter 140 loss:0.276174
+iter 160 loss:0.251981
+iter 180 loss:0.232112
+iter 200 loss:0.215458
+iter 220 loss:0.201264
+iter 240 loss:0.188995
+iter 260 loss:0.178259
+iter 280 loss:0.168781
+Final loss: 0.160742
+Total training time: 20349.266039s
+Prediction accuracy: 0.953100
+
+Testing date:  12/22/16
+Xtr:  (784, 6000) Xte:  (784, 1000) Ytr:  (6000,) Yte:  (1000,)
+Initializing a neural network with :  1  hidden layers, hidden layer dimension: [300]
+Config: lambda:True epsilon:0.000010 iter:100
+weightConsWeight:0.001000 activConsWeight:0.001000 growingStep:1.000000
+train options:
+lossType:smx
+minMethod:prox tau:0.010000 ite:25
+iter 0 loss:2.302585
+iter 10 loss:1.638437
+iter 20 loss:0.938135
+iter 30 loss:0.634088
+iter 40 loss:0.479647
+iter 50 loss:0.384362
+iter 60 loss:0.318345
+iter 70 loss:0.269373
+iter 80 loss:0.231469
+iter 90 loss:0.201294
+Total training time: 306.271401s
+Prediction accuracy: 0.862000
+
