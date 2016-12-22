@@ -10,7 +10,7 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 # Load Mnist Data
-(trSize, teSize, valSize) = (5000, 100, 5000)
+(trSize, teSize, valSize) = (100, 100, 5000)
 
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
@@ -32,7 +32,7 @@ network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batch
 weightConsWeight = 0.001
 activConsWeight = 0.001
 growingStep = 1.08
-iterNum = 120
+iterNum = 20
 hasLambda = True 
 calLoss = False
 
@@ -40,7 +40,7 @@ print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
 print 'weightConsWeight:%f activConsWeight:%f growingStep:%f'%(weightConsWeight,activConsWeight,growingStep)
 tic = time.time()
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, 
-                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, evaluate=False)
+                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, evaluate=True)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 # Predict

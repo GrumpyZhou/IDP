@@ -246,7 +246,8 @@ class NeuralNetwork():
             # Walk through 1~L-1 layer network
             for l in range(1, L):
                 # w update
-                w[l] = z[l].dot(np.linalg.pinv(a[l-1]))                
+                #w[l] = z[l].dot(np.linalg.pinv(a[l-1])) 
+                w[l] = self.wUpdate(w[l], z[l], a[l-1], regWeight=0.001, dampWeight=0)
                
                 # a update
                 wNtr = w[l+1].T
@@ -259,7 +260,9 @@ class NeuralNetwork():
                            
             # L-layer
             # w update
-            w[L] = z[L].dot(np.linalg.pinv(a[L-1])) # Slowing down!!!
+            #w[L] = z[L].dot(np.linalg.pinv(a[L-1])) # Slowing down!!!
+            w[L] = self.wUpdate(w[L], z[L], a[L-1], regWeight=0, dampWeight=0)
+            
             
             t2 = time.time()
     
@@ -294,7 +297,12 @@ class NeuralNetwork():
         #loss = self.getFinalDataLoss(Xtr, y, w, lossType)
         #print 'Final loss: %f' % loss
         return w, Lambda
-   
+
+    def wUpdate(self, wPre, z, a, regWeight=0, dampWeight=0):
+        aTr = a.T
+        w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
+        #w = z.dot(aTr).dot(np.linalg.pinv(a.dot(aTr))) #z.dot(np.linalg.pinv(a)) 
+        return w 
     def zUpdate(self, beta, gamma, wa, al):
         '''Update of zl excluding the output layer(zL)'''
         # z_i < 0
