@@ -15,7 +15,7 @@ print '\n\nTesting date:  %s' % time.strftime("%x")
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 train = datasets['train']
-test = datasets['train']
+test = datasets['test']
 if valSize != 0:
     validation = datasets['validation']
 else: 
@@ -32,12 +32,12 @@ epsilon= 0.00001
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
-weightConsWeight = 15
-activConsWeight = 10
-growingStep = 1
+weightConsWeight = 0.001
+activConsWeight = 0.001
+growingStep = 1.02
 iterNum = 50
 hasLambda = False 
-calLoss = False
+calLoss = True
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
 print 'weightConsWeight:%f activConsWeight:%f growingStep:%f'%(weightConsWeight,activConsWeight,growingStep)

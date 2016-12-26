@@ -303,9 +303,9 @@ class NeuralNetwork():
 
     def wUpdate(self, wPre, z, a, regWeight=0, dampWeight=0):
         aTr = a.T
-        #w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
+        w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
         #w = z.dot(aTr).dot(np.linalg.pinv(a.dot(aTr))) 
-        w = z.dot(np.linalg.pinv(a)) 
+        #w = z.dot(np.linalg.pinv(a)) 
         return w 
     def zUpdate(self, beta, gamma, wa, al):
         '''Update of zl excluding the output layer(zL)'''
