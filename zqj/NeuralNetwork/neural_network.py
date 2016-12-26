@@ -19,8 +19,7 @@ class NeuralNetwork():
         - epsilon: The coefficient for initialize random weight matrix
         """
         self.train = train
-        self.Xtr, self.Ytr = train.nextBatch(train.imgNum)
-
+        self.Xtr, self.Ytr = train.images, train.labels
         if valSize > 0:
             self.Xval, self.Yval = validation.nextBatch(valSize)
         self.classNum = classNum

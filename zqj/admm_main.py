@@ -10,7 +10,7 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 # Load Mnist Data
-(trSize, teSize, valSize) = (100, 100, 5000)
+(trSize, teSize, valSize) = (100, 100, 0)
 
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
