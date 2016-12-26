@@ -15,8 +15,11 @@ print '\n\nTesting date:  %s' % time.strftime("%x")
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 train = datasets['train']
-test = datasets['test']
-validation = datasets['validation']
+test = datasets['train']
+if valSize != 0:
+    validation = datasets['validation']
+else: 
+    validation = None
 
 X_tr, Y_tr = train.images[:,range(trSize)], train.labels[range(trSize)]
 X_te, Y_te = test.images[:,range(teSize)], test.labels[range(teSize)]
@@ -29,18 +32,19 @@ epsilon= 0.00001
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
-weightConsWeight = 0.001
-activConsWeight = 0.001
-growingStep = 1.08
-iterNum = 20
-hasLambda = True 
+weightConsWeight = 15
+activConsWeight = 10
+growingStep = 1
+iterNum = 50
+hasLambda = False 
 calLoss = False
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
 print 'weightConsWeight:%f activConsWeight:%f growingStep:%f'%(weightConsWeight,activConsWeight,growingStep)
 tic = time.time()
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, 
-                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, evaluate=True)
+                              calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, 
+                              regWeight=0.0, dampWeight=0.0, evaluate=False)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 # Predict

@@ -20,7 +20,9 @@ class NeuralNetwork():
         """
         self.train = train
         self.Xtr, self.Ytr = train.nextBatch(train.imgNum)
-        self.Xval, self.Yval = validation.nextBatch(valSize)
+
+        if valSize > 0:
+            self.Xval, self.Yval = validation.nextBatch(valSize)
         self.classNum = classNum
         self.batchSize = batchSize
         self.hiddenLayer = hiddenLayer
@@ -73,7 +75,8 @@ class NeuralNetwork():
         
 
     '''Trainning'''
-    def trainWithMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterOutNum, iterInNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, evaluate=True, initW=None):
+    def trainWithMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterOutNum, iterInNum, hasLambda, calLoss=False, 
+                           lossType='smx', minMethod='prox', tau=0.01, ite=25, regWeight=0.001, dampWeight=0, evaluate=True, initW=None):
         """ 
         Input:
         weightConsWeight, activConsWeight
@@ -107,10 +110,13 @@ class NeuralNetwork():
             gamma = activConsWeight
             
             # ADMM Update
-            w, Lambda = self.admmUpdate(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda, innerEval=False)
+            w, Lambda = self.admmUpdate(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss, 
+                                        lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=False)
             
             # Do evaluation for each batch
             if evaluate:
+                loss = self.getFinalDataLoss(Xtr, y, w, lossType)
+                print 'Outiter %d Final loss: %f' %(k, loss)
                 self.evaluate(w, lossType, dataType='train')
             
             # Load new batch
@@ -118,15 +124,12 @@ class NeuralNetwork():
             # - a: activation, z: output, w: weight
             a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, w)  
             
-            loss = self.getFinalDataLoss(Xtr, y, w, lossType)
-            print 'Outiter %d Final loss: %f' %(k, loss)
-
-        
         self.W = w
         self.zL = z[L]
 
        
-    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, calLoss=False, lossType='smx', minMethod='prox', tau=0.01, ite=25, evaluate=True, initW=None):
+    def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, calLoss=False, 
+                              lossType='smx', minMethod='prox', tau=0.01, ite=25, regWeight=0.001, dampWeight=0, evaluate=True, initW=None):
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
         L = len(self.hiddenLayer) + 1
@@ -145,7 +148,8 @@ class NeuralNetwork():
         print 'minMethod:%s tau:%f ite:%d'%( minMethod, tau, ite)
 
 	# ADMM Update
-        w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda, innerEval=evaluate)
+        w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, 
+                                    lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=evaluate)
             
         # Save the W to network
         self.W = w
@@ -237,7 +241,7 @@ class NeuralNetwork():
         self.totalLoss.append(TOTAL)   
 
     '''ADMM Update logic'''
-    def admmUpdate(self, y, a, z, w, L, iter, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda=None, innerEval=False):
+    def admmUpdate(self, y, a, z, w, L, iter, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda=None, regWeight=0.001, dampWeight=0, innerEval=False):
 
         Xtr = a[0]
         # One ADMM updates
@@ -247,7 +251,7 @@ class NeuralNetwork():
             for l in range(1, L):
                 # w update
                 #w[l] = z[l].dot(np.linalg.pinv(a[l-1])) 
-                w[l] = self.wUpdate(w[l], z[l], a[l-1], regWeight=0.001, dampWeight=0)
+                w[l] = self.wUpdate(w[l], z[l], a[l-1], regWeight=regWeight, dampWeight=dampWeight)
                
                 # a update
                 wNtr = w[l+1].T
@@ -261,7 +265,7 @@ class NeuralNetwork():
             # L-layer
             # w update
             #w[L] = z[L].dot(np.linalg.pinv(a[L-1])) # Slowing down!!!
-            w[L] = self.wUpdate(w[L], z[L], a[L-1], regWeight=0, dampWeight=0)
+            w[L] = self.wUpdate(w[L], z[L], a[L-1], regWeight=regWeight, dampWeight=dampWeight)
             
             
             t2 = time.time()
@@ -284,8 +288,8 @@ class NeuralNetwork():
 
             t3 = time.time()
             if i % 10 == 0:
-                #loss = self.getFinalDataLoss(Xtr, y, w, lossType)
-                #print 'iter %d loss:%f'%(i,loss)
+                loss = self.getFinalDataLoss(Xtr, y, w, lossType)
+                print 'iter %d loss:%f'%(i,loss)
                 if innerEval:
                     self.evaluate(w, lossType, dataType='val') 
                 #print 'iter %d t1:%fs t2:%fs loss:%f'%(i, t2-t1, t3 - t2, loss)
@@ -300,8 +304,9 @@ class NeuralNetwork():
 
     def wUpdate(self, wPre, z, a, regWeight=0, dampWeight=0):
         aTr = a.T
-        w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
-        #w = z.dot(aTr).dot(np.linalg.pinv(a.dot(aTr))) #z.dot(np.linalg.pinv(a)) 
+        #w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
+        #w = z.dot(aTr).dot(np.linalg.pinv(a.dot(aTr))) 
+        w = z.dot(np.linalg.pinv(a)) 
         return w 
     def zUpdate(self, beta, gamma, wa, al):
         '''Update of zl excluding the output layer(zL)'''
