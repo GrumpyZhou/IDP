@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import linalg
 from random import shuffle
 import time
 import datetime
@@ -20,6 +21,7 @@ class NeuralNetwork():
         """
         self.train = train
         self.Xtr, self.Ytr = train.images, train.labels
+        #print self.Xtr.shape, self.Ytr.shape
         if valSize > 0:
             self.Xval, self.Yval = validation.nextBatch(valSize)
         self.classNum = classNum
@@ -113,14 +115,17 @@ class NeuralNetwork():
                                         lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=False)
             
             # Do evaluation for each batch
-            if evaluate and k % 10 == 0:
-                loss = self.getFinalDataLoss(Xtr, y, w, lossType)
-                print 'Outiter %d loss: %f' %(k, loss)
+            if evaluate and k % 20 == 0:
+                loss = self.validate(w, lossType, dataType='train')
+                #loss = self.getFinalDataLoss(Xtr, y, w, lossType)
+                print 'Outiter %d eval loss(global): %f' %(k, loss)
             
             # Load new batch
             Xtr, Ytr = self.train.nextBatch(self.batchSize)
             # - a: activation, z: output, w: weight
             a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, w)  
+            
+        print 'Final global loss:  %f' % self.validate(w, lossType, dataType='train')
             
         self.W = w
         self.zL = z[L]
@@ -153,21 +158,6 @@ class NeuralNetwork():
         self.W = w
         self.zL = z[L]     
 
-    '''Validation  ### error inside
-    def validate(self, w, lossType, dataType='train'):
-        if dataType == 'train':
-            X = self.Xtr
-            Y = self.Ytr
-        else:
-            X = self.Xval
-            Y = self.Yval
-        y = self.toHotOne(Y, self.classNum)
-        loss = self.getFinalDataLoss(X, y, w, lossType)
-        self.evalLoss.append(loss)
-        print 'Evaluated loss: %f' % loss    
-        
-    '''
-
     '''Prediction'''
     def predict(self, Xte):
         """
@@ -197,7 +187,7 @@ class NeuralNetwork():
         z = w[1].dot(self.Xtr)
         for l in range(1,len(self.hiddenLayer)+1):
             z = w[l+1].dot(self.ReLU(z))
-        loss = np.sum(self.softMax(z, y)) / self.trainNum
+        loss = np.sum(self.softMax(z, y)) / self.Xtr.shape[1]
         return loss
 
     def getFinalDataLoss(self, Xtr, y, w, lossType):
@@ -210,6 +200,21 @@ class NeuralNetwork():
         dataLossOpt = {'hinge': self.hinge, 'msq': self.meanSqr, 'smx': self.softMax}
         dataLoss = np.sum(dataLossOpt[lossType](z, y)) / Xtr.shape[1]
         return dataLoss
+
+    
+
+    '''Validation'''
+    def validate(self, w, lossType, dataType='train'):
+        if dataType == 'train':
+            X = self.Xtr
+            Y = self.Ytr
+        else:
+            X = self.Xval
+            Y = self.Yval
+        y = self.toHotOne(Y, self.classNum)
+        loss = self.getFinalDataLoss(X, y, w, lossType)
+        self.evalLoss.append(loss)
+        return loss
 
 
     def calLoss(self, Xtr, beta, gamma, a, z, w, y, Lambda, lossType):
@@ -305,9 +310,16 @@ class NeuralNetwork():
         # w update with regularizer and dampping
         #w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
         # w update with regularizer
-        #w = z.dot(aTr).dot(np.linalg.pinv(a.dot(aTr) + regWeight * np.identity(wPre.shape[1]))) 
+        
+        asq = a.dot(aTr)# + (1e-10) * np.eye(a.shape[0])
+        ainv = linalg.inv(asq + regWeight * np.identity(wPre.shape[1]))
+        w = z.dot(aTr).dot(ainv) 
+        
+        # w update with inv instead of pinv version
+
+        #w = z.dot(aTr).dot(linalg.inv(a.dot(aTr) + (1e-6) * np.eye(a.shape[0])))
         # w update original version
-        w = z.dot(np.linalg.pinv(a)) 
+        #w = z.dot(np.linalg.pinv(a)) 
         return w 
     def zUpdate(self, beta, gamma, wa, al):
         '''Update of zl excluding the output layer(zL)'''
@@ -368,6 +380,7 @@ class NeuralNetwork():
         
         for i in range(ite):
             # calculate probabilities
+            #zL = zL - np.repeat(np.max(zL, axis =0).reshape(1,zL.shape[1]),zL.shape[0],axis=0)
             zExp = np.exp(zL) 
             zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
 
@@ -458,6 +471,7 @@ class NeuralNetwork():
     def softMax(self, z, y):
         """ Evaluate Multiclass SVM Loss """ 
         loss = np.zeros(y.shape)
+        #z = z - np.repeat(np.max(z, axis =0).reshape(1,z.shape[1]),z.shape[0],axis=0) 
         zExp = np.exp(z) 
         zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True) 
         loss = -1 * y * np.log(zProb)
