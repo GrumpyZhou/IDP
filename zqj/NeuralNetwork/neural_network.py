@@ -113,10 +113,9 @@ class NeuralNetwork():
                                         lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=False)
             
             # Do evaluation for each batch
-            if evaluate:
+            if evaluate and k % 10 == 0:
                 loss = self.getFinalDataLoss(Xtr, y, w, lossType)
-                print 'Outiter %d Final loss: %f' %(k, loss)
-                self.evaluate(w, lossType, dataType='train')
+                print 'Outiter %d loss: %f' %(k, loss)
             
             # Load new batch
             Xtr, Ytr = self.train.nextBatch(self.batchSize)
@@ -154,8 +153,8 @@ class NeuralNetwork():
         self.W = w
         self.zL = z[L]     
 
-    '''Validation'''
-    def evaluate(self, w, lossType, dataType='train'):
+    '''Validation  ### error inside
+    def validate(self, w, lossType, dataType='train'):
         if dataType == 'train':
             X = self.Xtr
             Y = self.Ytr
@@ -167,6 +166,8 @@ class NeuralNetwork():
         self.evalLoss.append(loss)
         print 'Evaluated loss: %f' % loss    
         
+    '''
+
     '''Prediction'''
     def predict(self, Xte):
         """
@@ -286,11 +287,9 @@ class NeuralNetwork():
             gamma *= growingStep 
 
             t3 = time.time()
-            if i % 10 == 0:
+            if i % 10 == 0 and innerEval:
                 loss = self.getFinalDataLoss(Xtr, y, w, lossType)
                 print 'iter %d loss:%f'%(i,loss)
-                if innerEval:
-                    self.evaluate(w, lossType, dataType='val') 
                 #print 'iter %d t1:%fs t2:%fs loss:%f'%(i, t2-t1, t3 - t2, loss)
                          
             # Calculate total loss
