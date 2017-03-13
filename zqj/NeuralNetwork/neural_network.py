@@ -255,7 +255,6 @@ class NeuralNetwork():
             # Walk through 1~L-1 layer network
             for l in range(1, L):
                 # w update
-                #w[l] = z[l].dot(np.linalg.pinv(a[l-1])) 
                 w[l] = self.wUpdate(w[l], z[l], a[l-1], regWeight=regWeight, dampWeight=dampWeight)
                
                 # a update
@@ -269,7 +268,6 @@ class NeuralNetwork():
                            
             # L-layer
             # w update
-            #w[L] = z[L].dot(np.linalg.pinv(a[L-1])) # Slowing down!!!
             w[L] = self.wUpdate(w[L], z[L], a[L-1], regWeight=regWeight, dampWeight=dampWeight)
             
             
@@ -310,14 +308,10 @@ class NeuralNetwork():
         # w update with regularizer and dampping
         #w = (z.dot(aTr) + dampWeight * wPre).dot(np.linalg.pinv(a.dot(aTr) + (dampWeight + regWeight) * np.identity(wPre.shape[1])))
         # w update with regularizer
-        
-        asq = a.dot(aTr)# + (1e-10) * np.eye(a.shape[0])
+        asq = a.dot(aTr)
         ainv = linalg.inv(asq + regWeight * np.identity(wPre.shape[1]))
         w = z.dot(aTr).dot(ainv) 
         
-        # w update with inv instead of pinv version
-
-        #w = z.dot(aTr).dot(linalg.inv(a.dot(aTr) + (1e-6) * np.eye(a.shape[0])))
         # w update original version
         #w = z.dot(np.linalg.pinv(a)) 
         return w 
@@ -380,7 +374,6 @@ class NeuralNetwork():
         
         for i in range(ite):
             # calculate probabilities
-            #zL = zL - np.repeat(np.max(zL, axis =0).reshape(1,zL.shape[1]),zL.shape[0],axis=0)
             zExp = np.exp(zL) 
             zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True)
 
@@ -471,7 +464,6 @@ class NeuralNetwork():
     def softMax(self, z, y):
         """ Evaluate Multiclass SVM Loss """ 
         loss = np.zeros(y.shape)
-        #z = z - np.repeat(np.max(z, axis =0).reshape(1,z.shape[1]),z.shape[0],axis=0) 
         zExp = np.exp(z) 
         zProb = 1.0 * zExp / np.sum(zExp, axis=0, keepdims=True) 
         loss = -1 * y * np.log(zProb)
