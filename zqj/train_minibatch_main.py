@@ -10,10 +10,10 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 mnistDir = "NeuralNetwork/MnistData"
-(batchSize, testSize, valSize)=(300, 10000, 0)
+(batchSize, testSize, valSize)=(300, 300, 0)
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 train = datasets['train']
-test = datasets['test']
+test = datasets['train']
 if valSize != 0:
     validation = datasets['validation']
 else: 
@@ -33,13 +33,14 @@ iterOutNum =20
 iterInNum = 3
 hasLambda = True
 calLoss = False
+traditional = True
 
 # Train 
 tic = time.time()
 network.trainWithMiniBatch(weightConsWeight, activConsWeight, growingStep, 
                            iterOutNum, iterInNum, hasLambda, calLoss=calLoss, 
                            lossType='smx', minMethod='prox', tau=1, ite=10, 
-                           regWeight=1.0, dampWeight=0.0, evaluate=True)
+                           regWeight=1.0, dampWeight=0.0, evaluate=True,traditional = traditional)
 
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
