@@ -29,9 +29,7 @@ class NeuralNetwork():
         self.hiddenLayer = hiddenLayer
         self.epsilon = epsilon
 
-	#traditional ADMM
-	self.tlambda = [np.zeros((0))]
-	self.txi = [np.zeros((0))]
+	#traditional ADM
         
         self.W = []
         self.zL = np.zeros((0))  
@@ -51,7 +49,7 @@ class NeuralNetwork():
         
     
     '''Initialization'''
-    def initNetwork(self, Xtr, classNum, hiddenLayer, epsilon, initW):
+    def initNetwork(self, Xtr, classNum, hiddenLayer, epsilon, initW, traditional=False):
         """ 
         Return:
         - a: Activation list for each layer [a0, a1, a2]
@@ -79,6 +77,13 @@ class NeuralNetwork():
             w.append(epsilon*np.random.randn(classNum, a[L].shape[0]))
             z.append(w[L+1].dot(a[L]))
             
+        if traditional: 
+            self.tlambda = [np.zeros((0))]
+            self.txi = [np.zeros((0))]
+
+            for l in range(0,L+1):
+                self.tlambda.append(np.zeros(z[l+1].shape))
+                self.txi.append(np.zeros(self.tlambda[l+1].shape))
 	return a, z, w
         
 
@@ -502,21 +507,21 @@ class NeuralNetwork():
             y[Y[i],i] = 1
         return y
     
-    def admmUpdateByTrad(self, y, a, z, w, L, iter, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda=None, regWieght=0.001, dampWeight =0, innerEval=False):
+    def admmUpdateByTrad(self, y, a, z, w, L, iter, beta, gamma, growingStep, hasLambda, calLoss, lossType, minMethod, tau, ite, Lambda=None, regWeight=0.001, dampWeight =0, innerEval=False):
         Xtr = a[0]
         for i in range(iter):
             for l in range(1,L):
-                w[l] = self.wUpdateByTrad(w[l], z[l], a[l-1], self.tlambda[l], regWeight=regWeight, dampWeight=dampWeight,beta)
+                w[l] = self.wUpdateByTrad(w[l], z[l], a[l-1], self.tlambda[l], beta, regWeight=regWeight, dampWeight=dampWeight)
                 wNtr = w[l+1].T
-                a[l] = np.linalg.inv(2*beta*wNtr.dot(w[l+1]) + 2*gamma*np.identity(wNtr.shape[0])).dot(wNtr.dot(self.tlambda[l+1]) - self.tx[l]+2*beta*wNTr.dot(z[l+1])+2*gamma*self.ReLu(z[l]))
+                a[l] = np.linalg.inv(2*beta*wNtr.dot(w[l+1]) + 2*gamma*np.identity(wNtr.shape[0])).dot(wNtr.dot(self.tlambda[l+1]) - self.txi[l]+2*beta*wNtr.dot(z[l+1])+2*gamma*self.ReLU(z[l]))
                 z[l] = self.zUpdateByTrad(z[l], w[l], a[l-1], a[l], self.tlambda[l], self.txi[l], gamma, beta)
-                self.tlambda[l] = self.tlambda[l] + 2*beta*(z[l]-w[l]*a[l-1])
-                self.txi[l] = self.txi[l] + 2*gamma*(a[l] - self.ReLu(z[l]))
-            w[L] = self.wUpdateByTrad(w[l],z[l],a[l-1], self.tlambda[L], regWeight=regWeight,dampWeight=dampWeight, beta)
+                self.tlambda[l] = self.tlambda[l] + 2*beta*(z[l]-w[l].dot(a[l-1]))
+                self.txi[l] = self.txi[l] + 2*gamma*(a[l] - self.ReLU(z[l]))
+            w[L] = self.wUpdateByTrad(w[L],z[L],a[L-1], self.tlambda[L], beta, regWeight=regWeight,dampWeight=dampWeight)
             waL = w[L].dot(a[L-1])
             zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax}
             z[L] = zLastUpdateOpt[lossType](beta,waL,y,Lambda,method = minMethod,tau=tau, ite=ite)
-            self.tlambda[L] = self.tlambda[L] + 2*beta*(z[L]-w[L]*a[L-1])
+            self.tlambda[L] = self.tlambda[L] + 2*beta*(z[L]-w[L].dot(a[L-1]))
 
             if calLoss:
                 self.calLoss(Xtr, beta, gamma, a, z, w, y, Lambda, lossType)
@@ -527,25 +532,24 @@ class NeuralNetwork():
 
         return w, Lambda
 
-    def wUpdateByTrad(self, wPre, z, a, tlambda, regWeight=0, dampWeight=0,beta):
+    def wUpdateByTrad(self, wPre, z, a, tlambda, beta,regWeight=0, dampWeight=0):
         aTr = a.T
         asq = a.dot(aTr)
         ainv = linalg.inv(asq + regWeight * np.identity(wPre.shape[1]))
         w = 1/(2*beta)*(2*beta*z.dot(aTr)+tlambda.dot(aTr)).dot(ainv)
         return w
 
-    def zUpdateByTrad(z, w, aPre, a, tlambda, txi, gamma, beta):
+    def zUpdateByTrad(self,z, w, aPre, a, tlambda, txi, gamma, beta):
         stepsize = 0.01
-        for i in range(100):
+        for i in range(10):
             total = np.zeros((a.shape[0],a.shape[0],a.shape[1]))
-            temp = np.zeros((a.shape[0],a.shape[0]))
-            reluresult = self.ReLu(z)
+            reluresult = self.ReLU(z)
             row,col = np.where(reluresult>0)
-            for idx,val in row:
+            for idx,val in enumerate(row):
                 trow = val
                 tcol = col[idx]
-                temp[trow][trow][tcol]=1
-            total = sum(total,axis=2)/a.shape[1]
+                total[trow][trow][tcol]=1
+            total = np.sum(total,axis=2)/a.shape[1]
             grad = tlambda-total.dot(txi.T)+2*beta*(z-w.dot(aPre))-2*gamma*total.dot(a-reluresult)
             z = z - stepsize*grad
 	return z
