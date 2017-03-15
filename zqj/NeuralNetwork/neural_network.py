@@ -84,7 +84,7 @@ class NeuralNetwork():
 
     '''Trainning'''
     def trainWithMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterOutNum, iterInNum, hasLambda, calLoss=False, 
-                           lossType='smx', minMethod='prox', tau=0.01, ite=25, regWeight=0.001, dampWeight=0, evaluate=True, initW=None):
+                           lossType='smx', minMethod='prox', tau=0.01, ite=25, regWeight=0.001, dampWeight=0, evaluate=True, initW=None,traditional=False):
         """ 
         Input:
         weightConsWeight, activConsWeight
@@ -118,9 +118,11 @@ class NeuralNetwork():
             gamma = activConsWeight
             
             # ADMM Update
-            w, Lambda = self.admmUpdate(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss, 
+            if traditional:
+                w, Lambda = self.admmUpdateByTrad(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss,
                                         lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=False)
-            w, Lambda = self.admmUpdateByTrad(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss,
+            else:
+                w, Lambda = self.admmUpdate(y, a, z, w, L, iterInNum, beta, gamma, growingStep, hasLambda, calLoss, 
                                         lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=False)
             
             # Do evaluation for each batch
