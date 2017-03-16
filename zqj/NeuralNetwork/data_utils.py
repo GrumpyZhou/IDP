@@ -2,6 +2,7 @@ import os
 import struct
 import numpy as np
 import datetime
+import scipy.io
 
 
 def saveWeight(w, path='test/saved_weight'):
@@ -52,17 +53,49 @@ def getMnistDataSets(path, valSize = 0, reshape=True, transpose=True):
         validation = DataSet(Xtr[:valSize], Ytr[:valSize], reshape=reshape, transpose=transpose)
         return {"train": train, "validation": validation, "test": test}
     return {"train": train, "test": test}
+
+
+def getDataSetsFromMat(path, valSize = 0, submean=False, normalize=False, reshape=False, transpose=False):
+    
+    mat = scipy.io.loadmat(path)
+    
+    Xtr = np.concatenate((mat['X_train'], mat['X_val']),axis=1)
+    Ytr = np.squeeze(np.concatenate((mat['y_train'], mat['y_val']),axis=0))
+    Ytr = Ytr - 1
+    Xte = mat['X_test']
+    Yte = np.squeeze(mat['y_test'])
+    Yte = Yte - 1
+
+    
+    #Xtr -= mat['subtractedMean'][:Xtr.shape[0]]
+    #Xte -= mat['subtractedMean'][:]
+    if normalize:
+        Xtr /= mat['normalizationFactor']
+        
+    Xtr = Xtr.astype(np.float64)
+    Ytr = Ytr.astype(np.int64)
+    Xte = Xte.astype(np.float64)
+    Yte = Yte.astype(np.int64)
+
+    #print Xtr.shape, Ytr.shape, Xte.shape, Yte.shape
+    train = DataSet(Xtr[valSize:], Ytr[valSize:], reshape=reshape, transpose=transpose)
+    test = DataSet(Xte, Yte, reshape=reshape, transpose=transpose)
+    if valSize != 0:
+        validation = DataSet(Xtr[:valSize], Ytr[:valSize], reshape=reshape, transpose=transpose)
+        return {"train": train, "validation": validation, "test": test}
+    return {"train": train, "test": test}
     
 class DataSet():
 
     def __init__(self, images, labels, reshape=True, transpose=True):
-        self.imgNum = images.shape[0]
         
         if reshape:
             images = np.reshape(images, (images.shape[0], -1))
         if transpose:
             images = images.T
- 
+        
+        self.imgNum = images.shape[1]
+        #print 'imgNum',self.imgNum        
         self.images = images
         self.labels = labels
         self.round = 0
@@ -116,15 +149,4 @@ def show(image):
     ax.yaxis.set_ticks_position('left')
     pyplot.show()
 
-''' NOT USED ANY MORE
-def getMnistData(path):
-    
-    Xtr,Ytr = read("training",path)
-    Xte,Yte = read("testing",path)
-    Xtr = Xtr.astype(np.float64)
-    Ytr = Ytr.astype(np.int64)
-    Xte = Xte.astype(np.float64)
-    Yte = Yte.astype(np.int64)
 
-    return Xtr,Ytr,Xte,Yte
-'''
