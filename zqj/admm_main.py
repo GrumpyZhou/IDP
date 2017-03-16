@@ -7,15 +7,22 @@ from matplotlib import gridspec
 from NeuralNetwork.data_utils import *
 from NeuralNetwork.neural_network import *
 
-print '\n\nTesting date:  %s' % time.strftime("%x")
+print '\n\nTesting date:  %s without minibatch' % time.strftime("%x")
 
 # Load Mnist Data
-(trSize, teSize, valSize) = (100, 100, 0)
+(trSize, teSize, valSize) = (60000, 10000, 0)
 
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
+
+"""
+mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
+cifarDir = "NeuralNetwork/benchmarkData/cifarDataset.mat"
+spiralEasyDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
+datasets = getDataSetsFromMat(mnistDir, valSize=valSize)
+"""
 train = datasets['train']
-test = datasets['train']
+test = datasets['test']
 if valSize != 0:
     validation = datasets['validation']
 else: 
@@ -34,22 +41,27 @@ network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batch
 # Train param
 weightConsWeight = 0.001
 activConsWeight = 0.001
-growingStep = 1.02
-iterNum = 50
+growingStep = 1.08
+iterNum = 300
 hasLambda = True 
 calLoss = False
+regWeight = 1.0
+
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
-print 'weightConsWeight:%f activConsWeight:%f growingStep:%f'%(weightConsWeight,activConsWeight,growingStep)
+print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
 tic = time.time()
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, 
                               calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, 
-                              regWeight=1.0, dampWeight=0.0, evaluate=False)
+                              regWeight=regWeight, dampWeight=0.0, evaluate=True)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 # Predict
 Ypred,z = network.predict(X_te)
 print 'Prediction accuracy: %f' %np.mean(Ypred == Y_te)
+
+# Save weight 
+np.save('./weight.npy', network.W)
 
 # For visualization
 L = len(hiddenLayer)
