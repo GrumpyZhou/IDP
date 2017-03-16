@@ -1,8 +1,26 @@
 admm_log.txt
+benchmarkData/
 **.ipynb
 test/
+data/
+
 **.DS_Store
 zqj/.ipynb_checkpoints/
-**.DS_Store
 **.swp
 **.pyc
+
+# LaTeX temporary files
+*.aux
+*.log
+*.toc
+
+# PDF output - usually a bad idea to keep this in Git
+*.pdf
+
+# SyncTeX
+*.synctex.gz
+
+# BibTeX
+*.bbl
+*.blg
+
