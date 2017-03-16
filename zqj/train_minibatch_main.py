@@ -10,7 +10,7 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s' % time.strftime("%x")
 
 mnistDir = "NeuralNetwork/MnistData"
-(batchSize, testSize, valSize)=(300, 300, 0)
+(batchSize, testSize, valSize)=(100, 100, 0)
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 train = datasets['train']
 test = datasets['train']
@@ -26,11 +26,11 @@ classNum = 10
 epsilon= 0.0001 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=batchSize, valSize=valSize)
 
-weightConsWeight = 0.001
-activConsWeight = 0.001
-growingStep = 10
-iterOutNum =20
-iterInNum = 3
+weightConsWeight = 1
+activConsWeight = 10
+growingStep = 1
+iterOutNum =1
+iterInNum = 10
 hasLambda = True
 calLoss = False
 traditional = True
