@@ -57,21 +57,24 @@ class NeuralNetwork():
         L = len(hiddenLayer)
         a = [Xtr]
         z = [np.zeros((0))]
-        w = [np.zeros((0))]
         
-        if initW == None:
-            initW = [np.zeros((0))]
+        if initW != None:
+            w = initW
             for l in range(0, L):
-                initW.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
-            initW.append(epsilon*np.random.randn(classNum, hiddenLayer[L-1]))            
-        
-        for l in range(0, L):
-            w.append(initW[l+1])
-            z.append(w[l+1].dot(a[l]))
-            a.append(self.ReLU(z[l+1]))
-
-        w.append(initW[L+1])            
-        z.append(w[L+1].dot(a[L]))
+                z.append(w[l+1].dot(a[l]))
+                a.append(self.ReLU(z[l+1]))
+            z.append(w[L+1].dot(a[L]))
+            
+        else:
+            w = [np.zeros((0))]    
+            for l in range(0, L):
+                w.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
+                z.append(w[l+1].dot(a[l]))
+                a.append(self.ReLU(z[l+1]))
+                
+            w.append(epsilon*np.random.randn(classNum, a[L].shape[0]))
+            z.append(w[L+1].dot(a[L]))
+            
 	return a, z, w
         
 
