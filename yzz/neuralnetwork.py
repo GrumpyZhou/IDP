@@ -182,28 +182,24 @@ class NeuralNetwork():
 		return zL
 
 		'''
-		z = self.z[self.L-1]
-		for j in range(20):
-			p = np.exp(z)
-			sum_p = np.sum(p,axis=0)
-			p = p/sum_p
-			a = np.copy(p)
-			p[self.y==1] = p[self.y==1] - 1
-			f = p + self.tlambda[self.L-1] + 2*self.beta*(z-self.w[self.L-1].dot(self.a[self.L-2]))
-			dp = np.zeros((self.trainnum,10,10),dtype = np.float64)
-			for i in range(self.trainnum):
-				dp[i,:,:] = -a[:,i].reshape(10,1).dot(a[:,i].reshape(1,10))
-				diag = (1-a[:,i])*(a[:,i])
-				np.fill_diagonal(dp[i,:,:],diag)
-
-			temp = np.sum(dp,axis=0)
-			temp /= self.trainnum
-
-			df = temp + 2*self.beta*np.identity(10) 
-
-			z = z - np.linalg.inv(df).dot(f)
-				
-
+		i = self.L-1
+		waL = self.w[i].dot(self.a[i-1])
+		zL = self.w[i].dot(self.a[i-1])
+		N = zL.shape[1]
+		for ite in range(25):
+			zExp = np.exp(zL)
+			zProb = 1.0 * zExp / np.sum(zExp,axis=0, keepdims=True)
+			dLdz = (zProb - self.y) + 2*self.beta*(zL-waL) + self.tlambda[i];
+			diag = zProb*(1-zProb)
+			H = np.zeros((zL.shape[0],zL.shape[0]))
+			for j in range(0,zL.shape[1]):
+				pi = zProb[:,j].reshape(zL.shape[0],1)
+				dLdzi = -1*pi.dot(pi.T)
+				np.fill_diagonal(dLdzi,diag[:,i])
+				H += dLdzi
+			H = H/N+2*beta*np.identity(zL.shape[0])
+			zL = zL - tau*np.linalg.inv(H).dot(dLdz)
+		return zL
 		'''
 		p = np.exp(self.z[self.L-1])
 		sum_p = np.sum(p,axis=0)
@@ -224,7 +220,6 @@ class NeuralNetwork():
 			df = p+2*self.beta*z
 		'''
 
-		return z
 
 #--------------------------------------------------------------------------------------------
 
