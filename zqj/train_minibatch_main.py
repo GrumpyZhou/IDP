@@ -7,11 +7,14 @@ from matplotlib import gridspec
 from NeuralNetwork.data_utils import *
 from NeuralNetwork.neural_network import *
 
-print '\n\nTesting date:  %s' % time.strftime("%x")
+print '\n\nTesting date:  %s with minibatch' % time.strftime("%x")
 
+(batchSize, testSize, valSize)=(380, 10000, 0)
 mnistDir = "NeuralNetwork/MnistData"
-(batchSize, testSize, valSize)=(300, 10000, 0)
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
+
+#mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
+#datasets = getDataSetsFromMat(mnistDir, valSize=valSize)
 train = datasets['train']
 test = datasets['test']
 if valSize != 0:
@@ -23,28 +26,35 @@ Xte, Yte = test.nextBatch(testSize)
 # Initialize Parameters
 hiddenLayer = [300]
 classNum = 10 
-epsilon= 0.0001 
+epsilon= 0.01 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=batchSize, valSize=valSize)
 
 weightConsWeight = 0.001
 activConsWeight = 0.001
 growingStep = 10
-iterOutNum =20
+iterOutNum = 500
 iterInNum = 3
 hasLambda = True
 calLoss = False
+regWeight = 1.0
+prox_ite = 10
+
+
+#Logging 
+
+print 'Config: lambda:%s epsilon:%f in_iter:%d out_iter:%d batchsz:%d prox_it:%d'%(hasLambda,epsilon,iterInNum, iterOutNum, batchSize, prox_ite)
+print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
 
 # Train 
 tic = time.time()
 network.trainWithMiniBatch(weightConsWeight, activConsWeight, growingStep, 
                            iterOutNum, iterInNum, hasLambda, calLoss=calLoss, 
-                           lossType='smx', minMethod='prox', tau=1, ite=10, 
-                           regWeight=1.0, dampWeight=0.0, evaluate=True)
+                           lossType='smx', minMethod='prox', tau=1, ite=prox_ite, 
+                           regWeight=regWeight, dampWeight=0.0, evaluate=True)
 
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 
 # Predictf
 Ypred,z = network.predict(Xte)
-print ',,,',Ypred.shape
 print 'Prediction accuracy: %f' %np.mean(Ypred == Yte)
