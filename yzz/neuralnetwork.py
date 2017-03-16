@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import linalg
 import os, struct
 from array import array as pyarray
 from numpy import append, array, int8, uint8, zeros
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 class NeuralNetwork():
 	
 	def __init__(self,layers, neurons, trainnum, testnum, itnum, beta, gamma, epsilon):
+		self.regWeight = 0.001
 		self.L = layers
 		self.neurons = neurons
 		self.trainnum = trainnum
@@ -22,6 +24,8 @@ class NeuralNetwork():
 		self.zEnergy = list()
 		self.lossEnergy = list()
 		self.lambEnergy = list()
+		self.tlambda = list()
+		self.txi = list()
 		
 		self.w = list();
 		self.w.append(0);
@@ -33,14 +37,19 @@ class NeuralNetwork():
 		self.z = [0]
 		self.aEnergy.append(0)
 		self.zEnergy.append(0)
+		self.tlambda.append(0)
+		self.txi.append(0)
 		for i in range(1,layers-1):
 			self.z.append(self.w[i].dot(self.a[i-1]))
 			self.a.append(self.actFun(self.z[i]))
 			self.aEnergy.append(list())
 			self.zEnergy.append(list())
+			self.tlambda.append(zeros(self.z[i].shape)+1)
+			self.txi.append(zeros(self.z[i].shape)+1)
 
 		self.z.append(self.w[layers-1].dot(self.a[layers-2]))
 		self.zEnergy.append(list())
+		self.tlambda.append(zeros(self.z[layers-1].shape))
 		
 
 #--------------------------------------------------------------------------
@@ -99,10 +108,15 @@ class NeuralNetwork():
 				self.w[i] = self.updateW(i,idmatrixes)
 				self.a[i] = self.updateA(i,idmatrixes)
 				self.z[i] = self.updateZ(i)
+				self.tlambda[i] += 2*self.beta*(self.z[i]-self.w[i].dot(self.a[i-1]))
+				self.txi[i] += 2*self.gamma*(self.a[i]-self.actFun(self.z[i]))
+		
 
 			self.w[self.L-1] = self.updateW(self.L-1,idmatrixes)
+			tmp = self.z[self.L-1]
 			self.z[self.L-1] = self.updateLastZ()
-			self.mylambda = self.mylambda + self.beta*(self.z[self.L-1] - self.w[self.L-1].dot(self.a[self.L-2]))
+			print sum(sum(tmp-self.z[self.L-1]))
+			self.tlambda[self.L-1] += 2*self.beta*(self.z[self.L-1]-self.w[self.L-1].dot(self.a[self.L-2]))
 			#self.beta *= 1.05
 			#self.gamma *= 1.05
 			self.calEnergy()
@@ -113,35 +127,37 @@ class NeuralNetwork():
 #---------------------------------------------------------------------------------------
 
 	def updateW(self, i, idmatrixes):
-		aT = self.a[i-1].T
-		r = np.linalg.lstsq(self.a[i-1].dot(aT),idmatrixes[i])
-		pinva = aT.dot(r[0])
-		return self.z[i].dot(pinva)
+		aTr = self.a[i-1].T
+		asq = self.a[i-1].dot(aTr)
+		ainv = linalg.inv(asq + self.regWeight * np.identity(self.w[i].shape[1]))
+		w = 1/(2*self.beta)*(2*self.beta*self.z[i].dot(aTr)+self.tlambda[i].dot(aTr)).dot(ainv)
+		return w 
 
 #----------------------------------------------------------------------------------------
 
 	def updateA(self, i, idmatrixes):
-		wT = self.w[i+1].T
-		tmp = self.beta * (wT.dot(self.w[i+1]) + self.gamma*idmatrixes[i+1])
-		tmp = np.linalg.lstsq(tmp, idmatrixes[i+1])
-		return tmp[0].dot(self.beta *wT.dot(self.z[i+1]) + self.gamma*self.actFun(self.z[i])) 
+		tmp = 2*self.beta*self.w[i+1].T.dot(self.w[i+1])+2*self.gamma*np.identity(self.w[i+1].shape[1])
+		tmp = np.linalg.inv(tmp)
+		tmp = tmp.dot(self.w[i+1].T.dot(self.tlambda[i+1])-self.txi[i]+2*self.beta*self.w[i+1].T.dot(self.z[i+1])+2*self.gamma*self.actFun(self.z[i]))
+		return tmp
 
 #-----------------------------------------------------------------------------------------
 
 	def updateZ(self, i):
-		aw = self.w[i].dot(self.a[i-1])
-		
-		z_s = np.copy(aw)
-		z_s[z_s>0] = 0
-		l_s = self.regularElementWiseCost(self.beta, self.gamma, self.a[i], aw, z_s)
-
-		z_b = (self.gamma * self.a[i] + self.beta * aw) / (self.beta + self.gamma)
-		z_b[z_b<0] = 0
-		l_b = self.regularElementWiseCost(self.beta, self.gamma, self.a[i], aw, z_b)
-		
-		z_s[l_s > l_b] = z_b [l_s> l_b]
-
-		return z_s
+		z = self.z[i]
+		stepsize = 0.0001
+		for j in range(10):
+			total = np.zeros((self.a[i].shape[0],self.a[i].shape[0],self.a[i].shape[1]))
+			reluresult = self.actFun(self.z[i])
+			row,col = np.where(reluresult>0)
+			for idx,val in enumerate(row):
+				trow = val
+				tcol = col[idx]
+				total[trow][trow][tcol] = 1
+			total = np.sum(total,axis=2)/self.a[i].shape[1]
+			grad = self.tlambda[i]-total.dot(self.txi[i])+2*self.beta*(self.z[i]-self.w[i].dot(self.a[i-1]))-2*self.gamma*total.dot(self.a[i]-reluresult)
+			z = z-stepsize*grad
+		return z
 
 #------------------------------------------------------------------------------------------
 
@@ -173,7 +189,7 @@ class NeuralNetwork():
 			p = p/sum_p
 			a = np.copy(p)
 			p[self.y==1] = p[self.y==1] - 1
-			f = p + self.mylambda + 2*self.beta*(z-self.w[self.L-1].dot(self.a[self.L-2]))
+			f = p + self.tlambda[self.L-1] + 2*self.beta*(z-self.w[self.L-1].dot(self.a[self.L-2]))
 			dp = np.zeros((self.trainnum,10,10),dtype = np.float64)
 			for i in range(self.trainnum):
 				dp[i,:,:] = -a[:,i].reshape(10,1).dot(a[:,i].reshape(1,10))
@@ -257,7 +273,7 @@ class NeuralNetwork():
 #----------------------------------------------------------------------------------------
 
 	def predict(self):
-		a0,labels,y = self.loadmnist("testing")
+		a0,labels,y = self.loadmnist("training")
 		tmp = a0
 		for i in range(1,self.L-1):
 			tmp = self.w[i].dot(tmp)
@@ -289,7 +305,7 @@ class NeuralNetwork():
 
 network_layers = 3
 neurons = [784,300,10]
-trainnum = 600
+trainnum = 100
 testnum = 100
 itnum = 20
 beta = 1

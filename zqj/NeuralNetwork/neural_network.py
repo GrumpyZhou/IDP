@@ -167,7 +167,7 @@ class NeuralNetwork():
         print 'minMethod:%s tau:%f ite:%d'%( minMethod, tau, ite)
 
 	# ADMM Update
-        w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, 
+        w, Lambda = self.admmUpdateByTrad(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, 
                                     lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=evaluate)
             
         # Save the W to network
@@ -540,8 +540,8 @@ class NeuralNetwork():
         return w
 
     def zUpdateByTrad(self,z, w, aPre, a, tlambda, txi, gamma, beta):
-        stepsize = 0.01
-        for i in range(10):
+        stepsize = 0.0001
+        for i in range(50):
             total = np.zeros((a.shape[0],a.shape[0],a.shape[1]))
             reluresult = self.ReLU(z)
             row,col = np.where(reluresult>0)
@@ -550,6 +550,6 @@ class NeuralNetwork():
                 tcol = col[idx]
                 total[trow][trow][tcol]=1
             total = np.sum(total,axis=2)/a.shape[1]
-            grad = tlambda-total.dot(txi.T)+2*beta*(z-w.dot(aPre))-2*gamma*total.dot(a-reluresult)
+            grad = tlambda-total.dot(txi)+2*beta*(z-w.dot(aPre))-2*gamma*total.dot(a-reluresult)
             z = z - stepsize*grad
 	return z

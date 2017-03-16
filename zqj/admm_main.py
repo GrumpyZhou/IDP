@@ -47,7 +47,6 @@ hasLambda = True
 calLoss = False
 regWeight = 1.0
 
-
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
 print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
 tic = time.time()

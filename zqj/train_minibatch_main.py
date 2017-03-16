@@ -29,6 +29,7 @@ classNum = 10
 epsilon= 0.01 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=batchSize, valSize=valSize)
 
+<<<<<<< HEAD
 weightConsWeight = 0.001
 activConsWeight = 0.001
 growingStep = 10
