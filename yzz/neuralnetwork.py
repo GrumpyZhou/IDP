@@ -115,7 +115,6 @@ class NeuralNetwork():
 			self.w[self.L-1] = self.updateW(self.L-1,idmatrixes)
 			tmp = self.z[self.L-1]
 			self.z[self.L-1] = self.updateLastZ()
-			print sum(sum(tmp-self.z[self.L-1]))
 			self.tlambda[self.L-1] += 2*self.beta*(self.z[self.L-1]-self.w[self.L-1].dot(self.a[self.L-2]))
 			#self.beta *= 1.05
 			#self.gamma *= 1.05
@@ -198,7 +197,7 @@ class NeuralNetwork():
 				np.fill_diagonal(dLdzi,diag[:,i])
 				H += dLdzi
 			H = H/N+2*beta*np.identity(zL.shape[0])
-			zL = zL - tau*np.linalg.inv(H).dot(dLdz)
+			zL = zL - 0.01*np.linalg.inv(H).dot(dLdz)
 		return zL
 		'''
 		p = np.exp(self.z[self.L-1])
@@ -268,7 +267,7 @@ class NeuralNetwork():
 #----------------------------------------------------------------------------------------
 
 	def predict(self):
-		a0,labels,y = self.loadmnist("training")
+		a0,labels,y = self.loadmnist("testing")
 		tmp = a0
 		for i in range(1,self.L-1):
 			tmp = self.w[i].dot(tmp)
@@ -302,9 +301,9 @@ network_layers = 3
 neurons = [784,300,10]
 trainnum = 100
 testnum = 100
-itnum = 20
-beta = 1
-gamma = 10
+itnum = 3
+beta = 0.01
+gamma = 0.1
 epsilon = 0.0001
 #epsilon = np.sqrt(0.1/trainnum)
 
