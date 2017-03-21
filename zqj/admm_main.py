@@ -10,12 +10,7 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s without minibatch' % time.strftime("%x")
 
 # Load Mnist Data
-<<<<<<< HEAD
-(trSize, teSize, valSize) = (60000, 10000, 0)
-=======
-(trSize, teSize, valSize) = (200, 200, 0)
->>>>>>> 6907e9e0ca69794bc2ee65f739fee089b057521f
-
+(trSize, teSize, valSize) = (300, 300, 0)
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 
@@ -26,7 +21,7 @@ spiralEasyDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
 datasets = getDataSetsFromMat(mnistDir, valSize=valSize)
 """
 train = datasets['train']
-test = datasets['test']
+test = datasets['train']
 if valSize != 0:
     validation = datasets['validation']
 else: 
@@ -44,19 +39,20 @@ network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batch
 
 # Train param
 weightConsWeight = 0.001
-activConsWeight = 0.001
-growingStep = 1.08
-iterNum = 300
-hasLambda = True 
-calLoss = False
+activConsWeight = 0.0001
+growingStep = 1
+iterNum = 20
+hasLambda = False 
+calLoss = True 
 regWeight = 1.0
+traditional = True
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
-print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
+print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f traditional:%s'%(weightConsWeight,activConsWeight,growingStep, regWeight, traditional)
 tic = time.time()
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, 
                               calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, 
-                              regWeight=regWeight, dampWeight=0.0, evaluate=True)
+                              regWeight=regWeight, dampWeight=0.0, evaluate=True, traditional=traditional)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 # Predict

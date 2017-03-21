@@ -148,7 +148,8 @@ class NeuralNetwork():
 
        
     def trainWithoutMiniBatch(self, weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, calLoss=False, 
-                              lossType='smx', minMethod='prox', tau=0.01, ite=25, regWeight=0.001, dampWeight=0, evaluate=True, initW=None):
+                              lossType='smx', minMethod='prox', tau=0.01, ite=25, regWeight=0.001, dampWeight=0, 
+                              evaluate=True, initW=None, traditional=False):
         # Initialization 
         # - C: number of classes, N: number of training images, L: number of layers(including output layer)
         L = len(self.hiddenLayer) + 1
@@ -159,7 +160,7 @@ class NeuralNetwork():
         beta = weightConsWeight 
         gamma = activConsWeight
 
-        a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW)   
+        a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW, traditional=traditional)   
         Lambda = np.zeros_like(z[L])
         y = self.toHotOne(Ytr, self.classNum)
       
@@ -167,9 +168,12 @@ class NeuralNetwork():
         print 'minMethod:%s tau:%f ite:%d'%( minMethod, tau, ite)
 
 	# ADMM Update
-        w, Lambda = self.admmUpdateByTrad(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, 
-                                    lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=evaluate)
-            
+        if traditional:
+            w, Lambda = self.admmUpdateByTrad(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss,
+                                              lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=evaluate)
+        else:
+            w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, 
+                                        lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=evaluate)
         # Save the W to network
         self.W = w
         self.zL = z[L]     
