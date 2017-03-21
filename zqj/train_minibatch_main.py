@@ -9,7 +9,7 @@ from NeuralNetwork.neural_network import *
 
 print '\n\nTesting date:  %s with minibatch' % time.strftime("%x")
 
-(batchSize, testSize, valSize)=(300, 10000, 0)
+(batchSize, testSize, valSize)=(100, 100, 0)
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 
@@ -32,8 +32,8 @@ network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batch
 weightConsWeight = 0.001
 activConsWeight = 0.001
 growingStep = 10
-iterOutNum = 500
-iterInNum = 3
+iterOutNum = 1 
+iterInNum = 5
 regWeight = 1.0
 prox_ite = 10
 traditional = True
@@ -42,10 +42,8 @@ calLoss = False
 traditional = True
 
 #Logging 
-print 'Config: lambda:%s epsilon:%f in_iter:%d out_iter:%d batchsz:%d prox_it:%d'
-      %(hasLambda,epsilon,iterInNum, iterOutNum, batchSize, prox_ite)
-print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f traditional:%s'
-      %(weightConsWeight,activConsWeight,growingStep, regWeight, traditional)
+print 'Config: lambda:%s epsilon:%f in_iter:%d out_iter:%d batchsz:%d prox_it:%d'%(hasLambda,epsilon,iterInNum, iterOutNum, batchSize, prox_ite)
+print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f traditional:%s'%(weightConsWeight,activConsWeight,growingStep, regWeight, traditional)
 
 # Train 
 tic = time.time()

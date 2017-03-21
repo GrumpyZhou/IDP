@@ -110,7 +110,7 @@ class NeuralNetwork():
         #N = batchSize
         L = len(self.hiddenLayer) + 1
         
-        a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW)   
+        a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, initW, traditional=traditional)   
         Lambda = np.zeros_like(z[L])
                        
         # Main part of ADMM updates
@@ -139,7 +139,7 @@ class NeuralNetwork():
             # Load new batch
             Xtr, Ytr = self.train.nextBatch(self.batchSize)
             # - a: activation, z: output, w: weight
-            a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, w)  
+            a, z, w = self.initNetwork(Xtr, self.classNum, self.hiddenLayer, self.epsilon, w, traditional=traditional)  
             
         print 'Final global loss:  %f' % self.validate(w, lossType, dataType='train')
             
