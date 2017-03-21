@@ -517,7 +517,7 @@ class NeuralNetwork():
             w[L] = self.wUpdateByTrad(w[L],z[L],a[L-1], self.tlambda[L], beta, regWeight=regWeight,dampWeight=dampWeight)
             waL = w[L].dot(a[L-1])
             zLastUpdateOpt = {'hinge': self.zLastUpdateWithHinge, 'msq': self.zLastUpdateWithMeanSq, 'smx': self.zLastUpdateWithSoftmax}
-            z[L] = zLastUpdateOpt[lossType](beta,waL,y,Lambda,method = minMethod,tau=tau, ite=ite)
+            z[L] = zLastUpdateOpt[lossType](beta,waL,y,self.tlambda[L],method = minMethod,tau=tau, ite=ite)
             self.tlambda[L] = self.tlambda[L] + 2*beta*(z[L]-w[L].dot(a[L-1]))
 
             if calLoss:
@@ -538,7 +538,7 @@ class NeuralNetwork():
 
     def zUpdateByTrad(self,z, w, aPre, a, tlambda, txi, gamma, beta):
         stepsize = 0.0001
-        for i in range(50):
+        for i in range(10):
             total = np.zeros((a.shape[0],a.shape[0],a.shape[1]))
             reluresult = self.ReLU(z)
             row,col = np.where(reluresult>0)
