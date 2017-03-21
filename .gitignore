@@ -4,6 +4,8 @@ benchmarkData/
 test/
 data/
 
+**/.DS_Store
+.DS_Store
 **.DS_Store
 zqj/.ipynb_checkpoints/
 **.swp
