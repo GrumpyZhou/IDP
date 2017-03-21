@@ -10,7 +10,11 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s without minibatch' % time.strftime("%x")
 
 # Load Mnist Data
+<<<<<<< HEAD
 (trSize, teSize, valSize) = (60000, 10000, 0)
+=======
+(trSize, teSize, valSize) = (200, 200, 0)
+>>>>>>> 6907e9e0ca69794bc2ee65f739fee089b057521f
 
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)

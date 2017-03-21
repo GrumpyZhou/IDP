@@ -29,7 +29,6 @@ classNum = 10
 epsilon= 0.01 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=batchSize, valSize=valSize)
 
-<<<<<<< HEAD
 weightConsWeight = 0.001
 activConsWeight = 0.001
 growingStep = 10
@@ -40,6 +39,7 @@ prox_ite = 10
 traditional = True
 hasLambda = True
 calLoss = False
+traditional = True
 
 #Logging 
 print 'Config: lambda:%s epsilon:%f in_iter:%d out_iter:%d batchsz:%d prox_it:%d'

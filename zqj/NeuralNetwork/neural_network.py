@@ -80,10 +80,10 @@ class NeuralNetwork():
         if traditional: 
             self.tlambda = [np.zeros((0))]
             self.txi = [np.zeros((0))]
-
             for l in range(0,L+1):
                 self.tlambda.append(np.zeros(z[l+1].shape))
                 self.txi.append(np.zeros(self.tlambda[l+1].shape))
+
 	return a, z, w
         
 
