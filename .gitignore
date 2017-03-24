@@ -16,7 +16,9 @@ zqj/.ipynb_checkpoints/
 *.log
 *.toc
 *.cls
-
+*.out
+*.dvi
+*.blg
 # PDF output - usually a bad idea to keep this in Git
 *.pdf
 
