@@ -15,12 +15,16 @@
 % on the last page of the document
 
 % The following packages can be found on http:\\www.ctan.org
-%\usepackage{graphics} % for pdf, bitmapped graphics files
+\usepackage{graphics} % for pdf, bitmapped graphics files
 %\usepackage{epsfig} % for postscript graphics files
 %\usepackage{mathptmx} % assumes new font selection scheme installed
 %\usepackage{times} % assumes new font selection scheme installed
-%\usepackage{amsmath} % assumes amsmath package installed
+\usepackage{amsmath} % assumes amsmath package installed
 %\usepackage{amssymb}  % assumes amsmath package installed
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
 
 \title{\LARGE \bf
 Report of Applying ADMM to Neural Network
@@ -38,25 +42,120 @@ Report of Applying ADMM to Neural Network
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{INTRODUCTION}
-\subsection{Neural Network}
-%Backpropagation
+\subsection{Artificial Neural Networks} 
+Artificial neural networks(ANN) are computational models, inspired by natural neural networks to learn useful information(representation) from data. They have been widely applied to tackle real-world problems and brought breakthrough to fields such as image recognition and natural language processing.  Before a neural network can actually perform pattern recognition tasks, it requires numerous learning on a specific dataset, which refers to the training process.
+ 
+ In ANN, a neuron as the core composing unit can be mathematically represented as a function $g: a \rightarrow z$
+ \begin{equation}
+	g(a, W)= h(\displaystyle\sum_{k}a_kw_k) = h(Wa)
+\end{equation}
+where $a$ is the input data, $W$ is the weight matrix (Here we consider bias is integrated into $W$) and $h$ is an activation function\cite{1}. A layer is composed by a set of artificial neurons with identical activation function. A feedforward neural network where the output of neurons of previous layer is feed forward to the neurons of current layer, can be formed by consecutively connecting multiple layers.
+
+To be specific, a 3-layer feedforward neural network can be mathematical defined as:
+\begin{equation} \label{eq:network}
+	f(a_0, W) = W_3(h_2(W_2(h_1(W_1a_0))))
+\end{equation}
+where $W = \{W_1, W_2, W_3\}$ denotes the ensemble of weight ma- trices, and each column of input $a_0$ is a training sample.
+
+\subsection{Training a neural network with SGD }
+Such a neural network defined in (\ref{eq:network}) is learned by varying weight matrix $W$ so that the output activation $a_L$ match to the target label $y$. Using a loss function $l$ as the evaluation criteria, the training task can be proposed as an optimisation problem:
+\begin{equation} \label{eq:min}
+	\min_{W} l(f(a_0, W), y)
+\end{equation}
+As the activation function $h$ introduces non-linearity into the network model, problem (\ref{eq:min}) results in a highly non-convex optimisation problem. The most extensively applied approach for training a neural network is stochastic gradient descent (SGD), using backpropagation to calculate the gradients.  Although SGD performs well in serial setting where modern GPUs are necessary for efficient training, it fails to maintain strong scaling when parallelizing over CPUs machines \cite{2}. In addition, the class of gradient descent based approaches also has the severe problem of being trapped in poor local optima \cite{3} or a saddle point \cite{4}, especially for deeper architecture. 
+
 \subsection{Alternating Direction Method of Multipliers}
-% Apply ADMM to NN
+In the context of optimisation, except for the gradient-based algorithms, there are still more sophisticated optimisation methods. The alternating direction method with multipliers (ADMM) has been one of most powerful and successful methods for solving constrained convex problems. Recent studies (e.g. \cite{5, 6, 7, 8}) on ADMM for non-convex optimisation problem, show that ADMM also performs well on a broad class of solve non-convex problems. Compared with SGD methods, in ADMM the original complex problem is decomposed into several simpler subproblems that are often solvable in closed form. Furthermore, the decomposition leads to possibility of large-scale distributed computing environments.
+
+In this project, we are interested applying a specific optimisation method ADMM to the training task. We follow the approach proposed in work \cite{9} and investigate whether ADMM can get rid of the troubles of SGD mentioned before.  In section \ref{preliminaries}, we state the concrete problem with mathematic notations. The Goldstein ADMM method proposed by work \cite{9} is fully studied in section \ref{studycase}, with practical experiments and theoretical analysis. In the following section \ref{improvement}, an improved version of this method is proposed and demonstrated. Then, the section \ref{experiment}, the improved version is extensively evaluated on different datasets and compared with various optimisation approaches. Finally, section \ref{conclusion} comes to a conclusion based on previous results.
+
+\section{Preliminaries}\label{preliminaries}
+To verify the feasibility of training ANN with ADMM, we select the simplest feedforward neural network as our training model. To define the problem, let's assume the network consists of $L$ layers. Given an input $a_{l-1}$ and its label $y$, the goal of training is to find the best weight $W$ which minimises a loss function $l$. The concrete mathematical model is defined as: 
+\begin{equation}
+\begin{aligned} 
+& \underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}}
+& & l(z_L,y) \\
+& \text{s.t.}
+& & z_l = W_la_{l-1},  l = 1,2,...,L \\
+& & & a_l = h_l(z_l),  l = 1,2,...L-1 \label{eq:model}
+\end{aligned}
+\end{equation}
+
+Following the idea of \cite{9}, the original unconstrained problem (\ref{eq:min}) is equivalent to the proposed constrained problem (\ref{eq:model}), where separating the objective function at each layer of a neural network into two terms: one term measuring the relation between the weights and the input activations, and the other term containing the nonlinear activation function. 
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Preliminaries}
 
-\section{Study on Goldstein ADMM}
-\subsection{The Proposed Method}
+\section{Study on Goldstein ADMM} \label{studycase}
+\subsection{The Proposed Method} \label{method}
+In work \cite{9}, they proposed a method to solve the constrained problem (\ref{eq:model}) by combining Bregman iterative update with an alternating minimisation strategy. They first relax the constraints by adding $l_2$ penalty functions to the objective function, which is actually a quadratic penalty formulation. Then  Lagrange multipliers are applied to output term $z_L$ to exactly enforce equality constraints, which yields the following unconstrained problem: \\
+\begin{equation}
+\begin{aligned}
+\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} & l(z_L,y) \\
++  \langle z_L, &\lambda \rangle + \beta_L||z_L -W_La_{L-1}||^2 \\
++ \sum_{l=1}^{L-1}&[\gamma_l||a_l - h_l(z_l)||^2 + \beta_l||z_l - W_la_{l_1}||^2]
+\label{eq:breg_model}
+\end{aligned}
+\end{equation}
+where $\{\gamma_l \}$ and $\{\beta_l\}$ are constants that control the weight of each constraint; $\lambda$ is a vector of Lagrange multipliers with the same dimensions as $z_L$. 
 
-\subsection{Evaluation}
+Noting (\ref{eq:breg_model}) is not a classical ADMM formulation, because the Lagrange multiplier is added only to the objective term $z_L$. A true ADMM formulation should be:
+\begin{equation}
+\begin{aligned}
+\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} & l(z_L,y) \\
++  \sum_{l=1}^{L}&[\langle \lambda_l, z_l - W_la_{l-1} \rangle + \beta_l||z_l - W_la_{l-1}||^2] \\
++ \sum_{l=1}^{L-1}&[\langle \eta_l, a_l - h_l(z_l) \rangle + \gamma_l||a_l - h_l(z_l)||^2 ]
+\label{eq:admm_model}
+\end{aligned}
+\end{equation}
+where $\{\lambda_l\}$, $\{\eta_l\}$ are sets of Lagrange multipliers corresponding to each constraint. They also mentioned the intuition behind (\ref{eq:breg_model}) is to apply Bregmen Iteration for p split Bregman method given explanation on this  gave that
+
+Then by applying an alternating direction method to formulation (\ref{eq:breg_model}) and addressing each term separately, one can derive following updates:
+\begin{algorithm} 
+\caption{ADMM for Neural Networks}
+	\begin{algorithmic}
+	    	\For  {$i=0$ to $serverIndex.length$} 
+		
+		\EndFor \\
+		$\lambda \leftarrow \lambda+\beta*(z_L - W_L*a_{L-1})$			\end{algorithmic}
+\end{algorithm}
+
+\subsection{Implementation and Evaluation}
+We implemented the updates of formulation (\ref{eq:breg_model}) using Python. We simply choose the most widely adopted rectified linear units(ReLUs) to be the activation function $h$, which is defined as:
+\begin{center}
+$h(x) = \begin{cases} x, & \mbox{if } x> 0 \\0, & \mbox{otherwise } \end{cases} $
+\end{center}
+
+To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. For the choice of loss function $l$, we tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimisation subproblem. Both of them worked out and achieved reasonable results. The weight matrix $W$ is initialised with random samples from $N(\mu=0, \sigma^2=1)$ gaussian distribution and then multiplied with $\epsilon$. 
+
+After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l$, etc.), the results giving the best accuracy rate are demonstrated in table:
+\begin{table}
+\begin{center}
+\begin{tabular}{c c c}
+	\hline
+		(training set, test set) & accuracy($\epsilon=1e-1$) & accuracy($\epsilon=1e-4$)\\
+		\hline
+		(600, 100) & 14\% & 34\% \\
+		(6000,100) & 78\% & 87\% \\
+		(10000,100) & 83\% & 85\% \\
+	\hline
+\end{tabular}
+\end{center}
+\end{table}
 
 \subsection{Analysis}
+Anyway, we can see the result is far away from the one promised in the paper, that at least 90\% should be achieved. There are several possible reasons: 
+\begin{enumerate}
+	\item The dataset is different.
+	\item The method is not as good as they claimed.
+	\item Our implementation is not correct.
+\end{enumerate}
 
-\section{Improvement based on Goldstein ADMM}
+Based on these guessing, we further investigate into the essence of the method and corresponding behaviour of the network. 
+\section{Improvement based on Goldstein ADMM} \label{improvement}
 
-\section{Experiments}
-\section{Conclusion}
+\section{Experiments} \label{experiment}
+\section{Conclusion} \label{conclusion}
 
 %\addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
@@ -69,7 +168,34 @@ Report of Applying ADMM to Neural Network
 
 \begin{thebibliography}{99}
 
-\bibitem{c1} G. O. Young, ÒSynthetic structure of industrial plastics (Book style with paper title and editor),Ó 	in Plastics, 2nd ed. vol. 3, J. Peters, Ed.  New York: McGraw-Hill, 1964, pp. 15Ð64.
+\bibitem{1} "The Machine Learning Dictionary" , \url{http://www.cse.unsw.edu.au/~billw/mldict.html}
+
+\bibitem{2} Dean, Jeffrey, et al. "Large scale distributed deep networks." Advances in neural information processing systems. 2012.
+
+
+\bibitem{3} Choromanska, Anna, et al. "The Loss Surfaces of Multilayer Networks." AISTATS. 2015.
+
+\bibitem{4} Dauphin, Yann N., et al. "Identifying and attacking the saddle point problem in high-dimensional non-convex optimization." Advances in neural information processing systems. 2014.
+
+\bibitem{5} Xu, Zheng, et al. "An empirical study of admm for nonconvex problems." arXiv preprint arXiv:1612.03349 (2016).
+
+\bibitem{6} Hong, Mingyi, Zhi-Quan Luo, and Meisam Razaviyayn. "Convergence analysis of alternating direction method of multipliers for a family of nonconvex problems." SIAM Journal on Optimization 26.1 (2016): 337-364.
+
+\bibitem{7} Wang, Yu, Wotao Yin, and Jinshan Zeng. "Global convergence of ADMM in nonconvex nonsmooth optimization." arXiv preprint arXiv:1511.06324 (2015).
+
+\bibitem{8} Wang, Fenghui, Zongben Xu, and Hong-Kun Xu. "Convergence of Bregman alternating direction method with multipliers for nonconvex composite problems." arXiv preprint arXiv:1410.8625 (2014).
+
+\bibitem{9} Taylor, Gavin, et al. "Training neural networks without gradients: A scalable admm approach." International Conference on Machine Learning. 2016.
+
+\bibitem{10} Goldstein, Tom, and Stanley Osher. "The split Bregman method for L1-regularized problems." SIAM journal on imaging sciences 2.2 (2009): 323-343.
+
+\bibitem{11} 
+\bibitem{12} 
+\bibitem{13} 
+
+
+
+
 
 \end{thebibliography}
 \end{document}
