@@ -24,6 +24,7 @@
 \usepackage{hyperref}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{blindtext}
 
 
 \title{\LARGE \bf
@@ -108,39 +109,95 @@ Noting (\ref{eq:breg_model}) is not a classical ADMM formulation, because the La
 \label{eq:admm_model}
 \end{aligned}
 \end{equation}
-where $\{\lambda_l\}$, $\{\eta_l\}$ are sets of Lagrange multipliers corresponding to each constraint. They also mentioned the intuition behind (\ref{eq:breg_model}) is to apply Bregmen Iteration for p split Bregman method given explanation on this  gave that
+where $\{\lambda_l\}$, $\{\eta_l\}$ are sets of Lagrange multipliers corresponding to each constraint. They also mentioned the intuition behind (\ref{eq:breg_model}) is to apply Bregmen Iteration \cite{10} for the problem (\ref{eq:model}). 
 
-Then by applying an alternating direction method to formulation (\ref{eq:breg_model}) and addressing each term separately, one can derive following updates:
+\subsection{Bregman Iteration Method} \label{breg_method}
+Here we will shortly explain the idea of Bregman Iteration Method and derive (\ref{eq:breg_model}) in detail. For a given problem: 
+\begin{equation}
+\begin{aligned}
+min && J(u) && s.t. && Au=b 
+\end{aligned}
+\end{equation}
+where  $J(u)$ is convex and $A$ is a linear operator. The Bregman method iteratively solve:
+\begin{equation}
+\begin{aligned}
+u^{k+1} \leftarrow \underset{u}{\text{argmin}} \: D_J^{p^k}(u, u^k) + {\frac{1}{2}}||Au - b||^2
+\label{eq:breg}
+\end{aligned} 
+\end{equation}
+where $p^k \in \partial J(u^k)$ is the subgradient of $J$ at $u^k$ and $D_J^{p^k}(u, u^k) = J(u) - J(u^k) - \langle p^k, u - u^k\rangle $ is called Bregman Distance. Therefore, by definition of $D_J^{p^k}(u, u^k)$, the multiplier is added only to the objective variable $u$, and leave the constraints as $l_2$ penalty terms.
+
+In our problem (\ref{eq:model}), the objective variable is the output layer $z_L$. Thus $J(u) = l(z_L, y)$ and constraint $Au = b$ corresponds to only $z_L = W_La_{L-1}$. Therefore, applying (\ref{eq:breg}) to (\ref{eq:model}) gives the update of $z_L^{k+1}$:
+\begin{equation*}
+\begin{aligned}
+&z_L^{k+1} = \underset{z_L}{\text{argmin}} \: D_l^{p^k}(z_L, z_L^k) + \beta_L||z_L - W_La_L-1||^2\\
+&= \underset{z_L}{\text{argmin}} \: l(z_L) -l(z_l^k) 
+ - \langle  \partial z_L^k, z_L - z_L^k \rangle +  \beta_L||z_L - W_La_L-1||^2\\
+&= \underset{z_L}{\text{argmin}} \: l(z_L) 
+ - \langle \partial(z_L^k), z_L \rangle + \beta_L||z_L - W_La_L-1||^2
+ \label{eq:zL}
+\end{aligned} 
+\end{equation*}
+The first-order optimality condition of (\ref{eq:zL}) gives immediately $\lambda$ update:
+\begin{equation*}
+\begin{aligned}
+&0 \in \partial(z_L^{k+1}) -  \partial(z_L^k) + 2 * \beta_L(z_L^{k+1} - W_La_{L-1}) \\
+&- \partial(z_L^{k+1}) \in - \partial(z_L^k) +  2 * \beta_L(z_L^{k+1} - W_La_{L-1}) \\
+&Setting \: \:  \lambda \in-  \frac{1}{2} \partial(z_L) \\
+&\lambda_{k+1} = \lambda^k + \beta_L(z_L^{k+1} - W_La_{L-1})
+\label{eq:zL}
+\end{aligned} 
+\end{equation*}
+According to the paper, they somehow combine the Bregmen Iteration with the $l_2$ penalty of the left constraints i.e. constraints except for $z_L$, which leads to exactly (\ref{eq:breg_model}). Then by applying an alternating direction method to formulation (\ref{eq:breg_model}) and addressing each term separately, we get the following algorithm:
 \begin{algorithm} 
 \caption{ADMM for Neural Networks}
-	\begin{algorithmic}
-	    	\For  {$i=0$ to $serverIndex.length$} 
-		
-		\EndFor \\
-		$\lambda \leftarrow \lambda+\beta*(z_L - W_L*a_{L-1})$			\end{algorithmic}
+\label{alg:gold_admm}
+\begin{algorithmic}[1]
+ \Repeat 
+    	\For  {$i=0, 1, ..., L$} 
+		\State $W_l \leftarrow  z_la_l^{\dagger}$
+		\State $a_l \leftarrow (\beta_{l+1}W_{l+1}^T W_{l+1}+\gamma_{l}I)^{-1} (\beta_{l+1}W_{l+1}^Tz_{l+1} + \gamma_{l}h_l(z_l))$
+		\State		
+	\EndFor \\
+	\State $\lambda \leftarrow \lambda+\beta*(z_L - W_L*a_{L-1})$	
+\Until{converge}	
+\end{algorithmic}
 \end{algorithm}
 
 \subsection{Implementation and Evaluation}
-We implemented the updates of formulation (\ref{eq:breg_model}) using Python. We simply choose the most widely adopted rectified linear units(ReLUs) to be the activation function $h$, which is defined as:
+We implemented the updates of  Algorithm \ref{alg:gold_admm} using Python. In this section, we will explain the details on how we implement these sub-steps. First, we choose the most widely adopted rectified linear units(ReLUs) to be the activation function $h$, which is defined as:
 \begin{center}
-$h(x) = \begin{cases} x, & \mbox{if } x> 0 \\0, & \mbox{otherwise } \end{cases} $
+$h(x) = \begin{cases} x, & \mbox{if } x> 0 \\0, & \mbox{otherwise }\end{cases} $
 \end{center}
 
-To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. For the choice of loss function $l$, we tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimisation subproblem. Both of them worked out and achieved reasonable results. The weight matrix $W$ is initialised with random samples from $N(\mu=0, \sigma^2=1)$ gaussian distribution and then multiplied with $\epsilon$. 
-
-After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l$, etc.), the results giving the best accuracy rate are demonstrated in table:
-\begin{table}
+In the following, we discuss only the updates of $z_l$ and $z_L$, which is not as straightforward as the others.\\
+\textbf{Update $z_l$:  }  Calculating the derivative of $h_l(z)$  we get:
 \begin{center}
-\begin{tabular}{c c c}
-	\hline
-		(training set, test set) & accuracy($\epsilon=1e-1$) & accuracy($\epsilon=1e-4$)\\
-		\hline
-		(600, 100) & 14\% & 34\% \\
-		(6000,100) & 78\% & 87\% \\
-		(10000,100) & 83\% & 85\% \\
-	\hline
+$(\partial_z h_l)_i = \begin{cases} 1, & \mbox{if } x> 0 \\0, & \mbox{otherwise }\end{cases} $
+\end{center}
+Then we get element-wise update of $(z_l)_i$ in following closed form:
+\begin{center}
+$(z_l)_i = \begin{cases} \frac{\gamma_la_l + \beta_lW_la_{l-1}}{\gamma_l + \beta_l}, & \mbox{if} (z_l)_i> 0 \\(W_la_{l-1})_i, & \mbox{otherwise}\end{cases} $
+\end{center}
+Finally, we do projection of $(z_l)_i$ to corresponding feasible space. \\\\
+\textbf{Update $z_L$:  }  We have to first decide the choice of loss function $l$. We tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimisation subproblem. Both of them worked out and achieved reasonable results. 
+
+To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. The weight matrix $W$ is initialised with random samples from $N(\mu=0, \sigma^2=1)$ gaussian distribution and then multiplied with $\epsilon$. 
+
+After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l$, etc.), the results giving the best accuracy rate are demonstrated in TABLE \ref{tab:res1}
+:
+\begin{table}[h]
+\centering
+\caption{}
+\begin{tabular}{c|c|c|c|}
+\hline
+		Hidden Layers & Accuracy[\%] & Energy &Time[s]\\
+\hline
+		(300) & 95 & 2.0 & 3132\\
+		(500, 300) & 93 & 1.2 & 2324 \\
+\hline
 \end{tabular}
-\end{center}
+\label{tab:res1}
 \end{table}
 
 \subsection{Analysis}
