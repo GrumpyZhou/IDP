@@ -10,17 +10,17 @@ from NeuralNetwork.neural_network import *
 print '\n\nTesting date:  %s without minibatch' % time.strftime("%x")
 
 # Load Mnist Data
-(trSize, teSize, valSize) = (60000, 10000, 0)
-
+(trSize, teSize, valSize) = (6867, 3133, 0)
+"""
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 
 """
-mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
-cifarDir = "NeuralNetwork/benchmarkData/cifarDataset.mat"
-spiralEasyDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
-datasets = getDataSetsFromMat(mnistDir, valSize=valSize)
-"""
+#mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
+#cifarDir = "NeuralNetwork/benchmarkData/cifarDataset.mat"
+moonDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
+datasets = getDataSetsFromMat(moonDir, valSize=valSize)
+
 train = datasets['train']
 test = datasets['test']
 if valSize != 0:
@@ -33,19 +33,19 @@ X_te, Y_te = test.images[:,range(teSize)], test.labels[range(teSize)]
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
 
 # Initialize networkfrom datetime import datetime, date, time
-hiddenLayer = [300]
-classNum = 10 
+hiddenLayer = [10, 10, 10, 10, 10]
+classNum = 2
 epsilon= 0.00001 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
 weightConsWeight = 0.001
 activConsWeight = 0.001
-growingStep = 1.08
-iterNum = 300
-hasLambda = True 
+growingStep = 1.001
+iterNum = 500
+hasLambda = False 
 calLoss = False
-regWeight = 1.0
+regWeight = 1
 
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
@@ -56,9 +56,14 @@ network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, it
                               regWeight=regWeight, dampWeight=0.0, evaluate=True)
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
-# Predict
-Ypred,z = network.predict(X_te)
-print 'Prediction accuracy: %f' %np.mean(Ypred == Y_te)
+# Predict test
+Y_te_pred = network.predict(X_te)
+print 'Prediction of test accuracy: %f' %np.mean(Y_te_pred == Y_te)
+
+# Predict train
+Y_tr_pred = network.predict(X_tr)
+print 'Prediction of train accuracy: %f' %np.mean(Y_tr_pred == Y_tr)
+
 
 # Save weight 
 np.save('./weight.npy', network.W)

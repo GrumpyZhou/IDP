@@ -9,7 +9,7 @@ from NeuralNetwork.neural_network import *
 
 print '\n\nTesting date:  %s with minibatch' % time.strftime("%x")
 
-(batchSize, testSize, valSize)=(380, 10000, 0)
+(batchSize, testSize, valSize)=(380, 500, 0)
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 
@@ -22,6 +22,8 @@ if valSize != 0:
 else: 
     validation = None
 Xte, Yte = test.nextBatch(testSize)
+Xtr, Ytr = train.images, train.labels
+
 
 # Initialize Parameters
 hiddenLayer = [300]
@@ -31,9 +33,9 @@ network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batch
 
 weightConsWeight = 0.001
 activConsWeight = 0.001
-growingStep = 10
-iterOutNum = 500
-iterInNum = 3
+growingStep = 1.05
+iterOutNum = 30
+iterInNum = 4
 hasLambda = True
 calLoss = False
 regWeight = 1.0
@@ -55,6 +57,12 @@ network.trainWithMiniBatch(weightConsWeight, activConsWeight, growingStep,
 toc = time.time()
 print 'Total training time: %fs' % (toc - tic)
 
-# Predictf
-Ypred,z = network.predict(Xte)
-print 'Prediction accuracy: %f' %np.mean(Ypred == Yte)
+# Predict test
+Yte_pred = network.predict(Xte)
+print 'Prediction of test accuracy: %f' %np.mean(Yte_pred == Yte)
+
+# Predict train
+Ytr_pred = network.predict(Xtr)
+print 'Prediction of train accuracy: %f' %np.mean(Ytr_pred == Ytr)
+
+
