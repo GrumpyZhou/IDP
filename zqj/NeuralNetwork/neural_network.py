@@ -175,7 +175,7 @@ class NeuralNetwork():
         for l in range(1,len(self.hiddenLayer)+1):
             z = w[l+1].dot(self.ReLU(z))
         y = z
-        return  np.argmax(y, axis=0), y
+        return  np.argmax(y, axis=0)
 
     def predictByFeed(self, Xte, w):
         z = w[1].dot(Xte)
