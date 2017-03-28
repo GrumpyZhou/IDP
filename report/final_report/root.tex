@@ -16,16 +16,16 @@
 
 % The following packages can be found on http:\\www.ctan.org
 \usepackage{graphics} % for pdf, bitmapped graphics files
-%\usepackage{epsfig} % for postscript graphics files
-%\usepackage{mathptmx} % assumes new font selection scheme installed
-%\usepackage{times} % assumes new font selection scheme installed
+\usepackage{epsfig} % for postscript graphics files
+\usepackage{mathptmx} % assumes new font selection scheme installed
+\usepackage{times} % assumes new font selection scheme installed
 \usepackage{amsmath} % assumes amsmath package installed
-%\usepackage{amssymb}  % assumes amsmath package installed
+\usepackage{amssymb}  % assumes amsmath package installed
 \usepackage{hyperref}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
+%\usepackage{algorithm}
+%\usepackage{algpseudocode}
 \usepackage{blindtext}
-
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 
 \title{\LARGE \bf
 Report of Applying ADMM to Neural Network
@@ -151,17 +151,21 @@ The first-order optimality condition of (\ref{eq:zL}) gives immediately $\lambda
 According to the paper, they somehow combine the Bregmen Iteration with the $l_2$ penalty of the left constraints i.e. constraints except for $z_L$, which leads to exactly (\ref{eq:breg_model}). Then by applying an alternating direction method to formulation (\ref{eq:breg_model}) and addressing each term separately, we get the following algorithm:
 \begin{algorithm} 
 \caption{ADMM for Neural Networks}
-\label{alg:gold_admm}
-\begin{algorithmic}[1]
- \Repeat 
-    	\For  {$i=0, 1, ..., L$} 
-		\State $W_l \leftarrow  z_la_l^{\dagger}$
-		\State $a_l \leftarrow (\beta_{l+1}W_{l+1}^T W_{l+1}+\gamma_{l}I)^{-1} (\beta_{l+1}W_{l+1}^Tz_{l+1} + \gamma_{l}h_l(z_l))$
-		\State		
-	\EndFor \\
-	\State $\lambda \leftarrow \lambda+\beta*(z_L - W_L*a_{L-1})$	
-\Until{converge}	
-\end{algorithmic}
+\label{alg:goldADMM}
+\KwIn{training features $\{a_0\}$, and labels $\{y\}$}
+initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
+\Repeat{converged}{
+	\For{l = 1, 2, \dots, L-1}{
+		 $W_l \gets  z_la_{l-1}^\dagger$ \\
+		 $a_l \gets (\beta_{l+1}W_{l+1}^TW_{l+1}+\gamma_lI)^{-1}$\\  
+	    $~~~~~~ \cdot (\beta_{l+1}W_{l+1}^Tz_{l+1}+\gamma_lh_l(z_l))$\\
+	    $z_l \gets argmin_z ||a_l-h_l(z)||^2 + \beta_l||z-W_la_{l-1}||^2$\\
+	}
+	$W_L \gets z_La_{L-1}^\dagger$\\
+	$z_L \gets argmin_z \mathcal{L}(z,y) + <z, \lambda> + \beta_L||z-W_La_{L-1}||^2$\\
+	$\lambda \gets \lambda + \beta_L(z_L-W_La_{L-1})$\\
+}
+
 \end{algorithm}
 
 \subsection{Implementation and Evaluation}
@@ -201,15 +205,122 @@ After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l
 \end{table}
 
 \subsection{Analysis}
-Anyway, we can see the result is far away from the one promised in the paper, that at least 90\% should be achieved. There are several possible reasons: 
-\begin{enumerate}
-	\item The dataset is different.
-	\item The method is not as good as they claimed.
-	\item Our implementation is not correct.
-\end{enumerate}
+According to the methods published in "The MNIST Dataset" \footnote{http://yann.lecun.com/exdb/mnist/}, ANN should achieve at least 95\% accuracy. The implementation from Tensorflow results an accuracy around 92\%. Additionally, the loss energy doesnot converge to the optimal one, i.e. it stops decaying around 2 but the optimal result should be 0, which is shown in Fig.\ref{fig:emergySame}.
 
-Based on these guessing, we further investigate into the essence of the method and corresponding behaviour of the network. 
+Recall the difference between the Goldstein ADMM and the classical ADMM, the Lagrange multiplier and the Bregman iteration might contribute to the low performance. Therefore, we remove the Lagrange item and only include the quadratic penalties into objective function.
+
+We apply Algorithm \ref{alg:goldADMM} with $\lambda=0$ and deleting line 10 to solve equation \eqref{eq:quadratic_only}. A result with lower energy and higher accuracy is achieved, which is illustrated in Fig.\ref{fig:energyWithoutLambda}. Based on this fact, we guess the Bregman iteration and the Lagrange multipllier are the main reason for the low performance.
+
+To analyze the reason mathmatically, we introduce a simple problem:
+\begin{equation}
+\begin{aligned}
+& \underset{w,a}{\text{minimize}}  & & (a-1)^2 \\
+& \text{s.t.} & & w+a =2\\
+\end{aligned}
+\label{eq:demo}
+\end{equation}
+which can be viewed as an ANN with 1 layers and the dimension of $a$ is $\mathbb{R}$. Since the Bregman iteration is applied for linear problems, we simplify $w \cdot a$ with $w + a$. Applying the idea of equation \eqref{eq:breg_model}:
+\begin{equation}
+\begin{aligned}
+& \underset{w,a}{\text{minimize}}  & & (a-1)^2 + \lambda \cdot a + \beta (2-w-a)^2\\
+\end{aligned}
+\end{equation}
+Above problem can be solve by using the same procedure from \ref{alg:goldADMM}, at each iteration $k$, we can get
+\begin{equation}
+\begin{aligned}
+w^{k+1} &= 2-a^k \\
+a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
+\lambda^{k+1} &= \lambda^{k+1} + 2\beta(2-w^{k+1}-a^{k+1})\\
+\end{aligned}
+\label{eq:demoupdate}
+\end{equation}
+This test example cannot return the result $w=1,a=1$ unless one of them is initialized as 1. However, the result can always satisfy the constraint. This is because of the property of Bregman iteration: once a feasible result is achieved, the iteration stops and it is the optimal one. It is obvious that when $w^k$ and $a^k$ satisfy the constarints, equation \eqref{eq:demoupdate} will stop updating. To show the rest of this property, recall that Bregman iteration wants to minize the Bregman distance $D^p_J(u,v) = J(u)-J(v)-<p,u-v>, p \in \partial J(v)$ which is nonagtive. Therefore, substitue our problem into the nonagtive inequality, for any $a$, we can get
+\begin{equation}
+\begin{aligned}
+J(a^k) & \leq J(a) -(a-a^k) \cdot \lambda^k \\
+& = J(a) - (a-(2-w^k)) \cdot \lambda^k \\
+\end{aligned}
+\end{equation}
+which means for any $a$ that satisfies $a+w^k=2$, we can get the optimal $J(a)$. However, we cannot ensure that this $w^k$ is the optimal value, i.e. if the final $w^k$ is not optimal, the corresponding $a$ is not optimal.
+
+In fact, we can construct a new value $u = [w,a]^T$ and rewrite the problem in equation \eqref{eq:demo}
+\begin{equation}
+\begin{aligned}
+& \underset{u}{\text{minimize}}  & & ([0,1]\cdot u-1)^2 \\
+& \text{s.t.} & & [1,1] \cdot u = 2\\
+\end{aligned}
+\end{equation}
+then if we apply Bregman iteration to above problem, which is classical Bregman iteration, the result is correct. In this case, the Lagrange multiplier $\lambda$ is a 2x1 matrix, which means updating $w$ should consider $\lambda$.
+
+All above are discussed in linear case, we also tested the same idea in nonliear case, this Bregman iteration cannot work neither. Therefore, we conclude that the reason why Goldstein ADMM cannot work is that the Bregman iteration and Lagrange multiplier should not only be considered for $z_L$ only.
+
 \section{Improvement based on Goldstein ADMM} \label{improvement}
+In this section, we propose our improvement based on Goldstein ADMM. We first try to solve equation \eqref{eq:model} using classical ADMM. It turns out that classical ADMM cannot perform stably. Inspired by the quadratic penalty method, we include only $l_2$ norm penalty in to objective function. This method can return a sequence with decaying energy to 0. Nonetheless, the constraints in equation \eqref{eq:model} are satisfied slowly and even not satisfied if the parameter $\gamma, \beta$ are not chose correctly. Additionally, we notice that if $\beta$ in Algorithm \ref{alg:goldADMM} is sufficient small, it is almost same as the quadratic penalty method. Therefore, we figure out one algorithm which can converge to optimal solution to a certain degree and the constraints are satisfied.
+
+\subsection{Quadratic penalty method}
+According to previous analysis, the Lagrange multiplier and Bregman iteration are the causes why Algorithm \ref{alg:goldADMM} fails. Thus, we manage to solve the equation \eqref{eq:model} by using quadratic penalty method, which leads to the equation:
+\begin{equation}
+\begin{aligned}
+\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} 
+& l(z_L,y) + \beta_L||z_L -W_La_{L-1}||^2 \\
++ \sum_{l=1}^{L-1}&[\gamma_l||a_l - h_l(z_l)||^2 + \beta_l||z_l - W_la_{l_1}||^2]
+\label{eq:quadratic_only}
+\end{aligned}
+\end{equation}
+This optimization problem can be solved by Algorithm \ref{alg:goldADMM} with a little modification mentioned before.
+
+It is obvious that once the optimal value is got, the corresponding $\{W_l\}$, $\{a_l\}$,$\{z_l\}$ are feasible for equation \eqref{eq:model}. However, the experiments show that the norms of constraints decays slowly, as illustrated in Fig. This is caused by the property of ADMM that original complex problem is decomposed into several simpler subproblems. Updating $\{a_l\}$ and $\{z_l\}$ become a trade-off between satisfying the constraints and minimizing loss function. If increasing the weight of each constraint, constraints are satisfied faster with higher loss energy. Additionally, increasing the iteration number can satisfy the constraints and lower the loss energy at the same time, which accounts for more computational expensive especially for large data set.
+
+\subsection{Bregman iteration with increasing penalty weights}
+To overcome the disadvantage of quadratic penalty method, a time-saving algorithm, which can satisfy constraints and minimize loss function at the same time, is proposed. Inspired by above discussion about the weight of each constraints, in this algorithm, the penalty weights are increasing at each iteration. To improve the efficiency, we also implement mini-batch for this algorithm. Besides, the regularization item is involved in the object function to prevent overfitting and numerical errors.
+
+\textbf{Increasing penalty weights}: according to the discussion in quadratic penalty method, the weights of penalty play an important role in satisfying constraints and minimizing loss function. Therefore, the main idea is that the initial value of the weights are sufficient small and at each iteration, the weights are multiplied by a constant $\rho>1$. We also involve the Lagrange multiplier $\lambda$ and apply the same Bregman iteration as Goldstein ADMM to force the constarints to be satisfied faster. The main reason is that with small $\{beta_L\}$, the $\lambda$ has ignorable effect on updating $z_L$ since $\lambda$ is initialized with 0. Thus, at the beginning iterations, a $z_L$ which can minizing the loss function sufficiently, is achieved. When the $\{beta_L\}$ becomes large enough, $z_L$ has to satisfy the constraints as well. To validate our idea, we still use euqation \eqref{eq:demo}. $\beta$ is initialized with 0.0001 and $rho$ is 1.01. For each iteration $k$, we get
+\begin{equation}
+\begin{aligned}
+w^{k+1} &= 2-a^k \\
+a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
+\lambda^{k+1} &= \lambda^{k+1} + 2\beta(2-w^{k+1}-a^{k+1})\\
+\beta &= \beta \cdot \rho \\
+\end{aligned}
+\label{eq:demoupdate}
+\end{equation}
+The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increased, it cannot converge to the optimal result, which means this algorithm can only converges to the neighborhood of the optimal result. The radius of the neighborhood depends on the initial value of $\beta$. If $\beta$ is initialized with smaller positive value, a final result which is closer to optimal one is achieved, which coincides with above analysis. Another parameter $\rho$ is determined based on the initial value of $\beta$. Small $\rho$ leads to a slow speed of satisfying the constraints. Too large $\rho$ results in a high loss energy. Besides, this algorithm is also tested on nonlinear case and can work as well. Therefore, even with the disadvantage that it can only reach the neighborhood, we decide to apply this algorithm to solve equation \eqref{eq:model}.
+
+\textbf{Other improvement}: We implement the mini-batch to our algorithm. The basic idea is that a batch is randomly chose from the data set. Then the neural network is trained by this batch. After several iterations, a new batch is chose and train the neural network based on previous results. Besides, we also include the regularization item for $\{W_l\}$ to solve the numerical errors and overfitting. The new problem then becomes:
+\begin{equation}
+\begin{aligned} 
+& \underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}}
+& & l(z_L,y) + \sum_{l=1}^L \alpha ||W_l||^2 \\
+& \text{s.t.}
+& & z_l = W_la_{l-1},  l = 1,2,...,L \\
+& & & a_l = h_l(z_l),  l = 1,2,...L-1 \label{eq:modelWithReg}
+\end{aligned}
+\end{equation}
+where $\alpha$ is the weight of regularization. The new algorithm to solve this optimization problem is discribed in Algorithm \ref{alg:ourADMM}.
+\begin{algorithm} 
+\caption{ADMM for Neural Networks}
+\label{alg:ourADMM}
+\KwIn{training features $\{a_0\}$, and labels $\{y\}$}
+initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
+\For{i = 1, \dots, outIteration}{
+	$a_0 \gets$ random batch\\
+	\For {j = 1, \dots, inIteration}{
+		\For{l = 1, 2, \dots, L-1}{
+		 	$W_l \gets (\alpha+I)^{-1}z_la_{l-1}^T(I+a_{l-1}a_{l-1}^T)^{-1}$ \\
+		 	$a_l \gets (\beta_{l+1}W_{l+1}^TW_{l+1}+\gamma_lI)^{-1}$\\  
+	    		$~~~~~~ \cdot (\beta_{l+1}W_{l+1}^Tz_{l+1}+\gamma_lh_l(z_l))$\\
+	    		$z_l \gets argmin_z ||a_l-h_l(z)||^2 + \beta_l||z-W_la_{l-1}||^2$\\
+	    		$\beta_l \gets \beta_l \cdot \rho $
+		}
+		$W_L \gets (\alpha+I)^{-1}z_La_{L-1}^T(I+a_{L-1}a_{L-1}^T)^{-1}$\\
+		$z_L \gets argmin_z \mathcal{L}(z,y)$\\
+		$ ~~~~~~+ <z, \lambda> + \beta_L||z-W_La_{L-1}||^2$\\
+		$\lambda \gets \lambda + \beta_L(z_L-W_La_{L-1})$\\
+		$\beta_L \gets \beta_L \cdot \rho$\\
+	}
+}
+
+\end{algorithm}
 
 \section{Experiments} \label{experiment}
 \section{Conclusion} \label{conclusion}
