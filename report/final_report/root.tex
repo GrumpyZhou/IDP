@@ -25,6 +25,8 @@
 %\usepackage{algorithm}
 %\usepackage{algpseudocode}
 \usepackage{blindtext}
+\usepackage{subcaption}
+\usepackage{graphicx}
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 
 \title{\LARGE \bf
@@ -50,32 +52,32 @@ Artificial neural networks(ANN) are computational models, inspired by natural ne
  \begin{equation}
 	g(a, W)= h(\displaystyle\sum_{k}a_kw_k) = h(Wa)
 \end{equation}
-where $a$ is the input data, $W$ is the weight matrix (Here we consider bias is integrated into $W$) and $h$ is an activation function\cite{1}. A layer is composed by a set of artificial neurons with identical activation function. A feedforward neural network where the output of neurons of previous layer is feed forward to the neurons of current layer, can be formed by consecutively connecting multiple layers.
+where $a$ is the input data, $W$ is the weight matrix (Here we consider bias is integrated into $W$) and $h$ is an activation function\cite{1}. A layer is composed by a set of artificial neurons with identical activation function. A feed-forward neural network where the output of neurons of previous layer is feed forward to the neurons of current layer, can be formed by consecutively connecting multiple layers.
 
-To be specific, a 3-layer feedforward neural network can be mathematical defined as:
+To be specific, a 3-layer feed-forward neural network can be mathematical defined as:
 \begin{equation} \label{eq:network}
 	f(a_0, W) = W_3(h_2(W_2(h_1(W_1a_0))))
 \end{equation}
 where $W = \{W_1, W_2, W_3\}$ denotes the ensemble of weight ma- trices, and each column of input $a_0$ is a training sample.
 
 \subsection{Training a neural network with SGD }
-Such a neural network defined in (\ref{eq:network}) is learned by varying weight matrix $W$ so that the output activation $a_L$ match to the target label $y$. Using a loss function $l$ as the evaluation criteria, the training task can be proposed as an optimisation problem:
+Such a neural network defined in (\ref{eq:network}) is learned by varying weight matrix $W$ so that the output activation $a_L$ match to the target label $y$. Using a loss function $l$ as the evaluation criteria, the training task can be proposed as an optimization problem:
 \begin{equation} \label{eq:min}
 	\min_{W} l(f(a_0, W), y)
 \end{equation}
 As the activation function $h$ introduces non-linearity into the network model, problem (\ref{eq:min}) results in a highly non-convex optimisation problem. The most extensively applied approach for training a neural network is stochastic gradient descent (SGD), using backpropagation to calculate the gradients.  Although SGD performs well in serial setting where modern GPUs are necessary for efficient training, it fails to maintain strong scaling when parallelizing over CPUs machines \cite{2}. In addition, the class of gradient descent based approaches also has the severe problem of being trapped in poor local optima \cite{3} or a saddle point \cite{4}, especially for deeper architecture. 
 
 \subsection{Alternating Direction Method of Multipliers}
-In the context of optimisation, except for the gradient-based algorithms, there are still more sophisticated optimisation methods. The alternating direction method with multipliers (ADMM) has been one of most powerful and successful methods for solving constrained convex problems. Recent studies (e.g. \cite{5, 6, 7, 8}) on ADMM for non-convex optimisation problem, show that ADMM also performs well on a broad class of solve non-convex problems. Compared with SGD methods, in ADMM the original complex problem is decomposed into several simpler subproblems that are often solvable in closed form. Furthermore, the decomposition leads to possibility of large-scale distributed computing environments.
+In the context of optimisation, except for the gradient-based algorithms, there are still more sophisticated optimisation methods. The alternating direction method with multipliers (ADMM) has been one of most powerful and successful methods for solving constrained convex problems. Recent studies (e.g. \cite{5, 6, 7, 8}) on ADMM for non-convex optimization problem, show that ADMM also performs well on a broad class of solve non-convex problems. Compared with SGD methods, in ADMM the original complex problem is decomposed into several simpler subproblems that are often solvable in closed form. Furthermore, the decomposition leads to possibility of large-scale distributed computing environments.
 
-In this project, we are interested applying a specific optimisation method ADMM to the training task. We follow the approach proposed in work \cite{9} and investigate whether ADMM can get rid of the troubles of SGD mentioned before.  In section \ref{preliminaries}, we state the concrete problem with mathematic notations. The Goldstein ADMM method proposed by work \cite{9} is fully studied in section \ref{studycase}, with practical experiments and theoretical analysis. In the following section \ref{improvement}, an improved version of this method is proposed and demonstrated. Then, the section \ref{experiment}, the improved version is extensively evaluated on different datasets and compared with various optimisation approaches. Finally, section \ref{conclusion} comes to a conclusion based on previous results.
+In this project, we are interested applying a specific optimisation method ADMM to the training task. We follow the approach proposed in work \cite{9} and investigate whether ADMM can get rid of the troubles of SGD mentioned before.  In section \ref{preliminaries}, we state the concrete problem with mathematic notations. The Goldstein ADMM method proposed by work \cite{9} is fully studied in section \ref{studycase}, with practical experiments and theoretical analysis. In the following section \ref{improvement}, an improved version of this method is proposed and demonstrated. Then, the section \ref{experiment}, the improved version is extensively evaluated on different datasets and compared with various optimization approaches. Finally, section \ref{conclusion} comes to a conclusion based on previous results.
 
 \section{Preliminaries}\label{preliminaries}
-To verify the feasibility of training ANN with ADMM, we select the simplest feedforward neural network as our training model. To define the problem, let's assume the network consists of $L$ layers. Given an input $a_{l-1}$ and its label $y$, the goal of training is to find the best weight $W$ which minimises a loss function $l$. The concrete mathematical model is defined as: 
+To verify the feasibility of training ANN with ADMM, we select the simplest feed-forward neural network as our training model. To define the problem, let's assume the network consists of $L$ layers. Given an input $a_{l-1}$ and its label $y$, the goal of training is to find the best weight $W$ which minimizes a loss function $\mathcal{L}$. The concrete mathematical model is defined as: 
 \begin{equation}
 \begin{aligned} 
 & \underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}}
-& & l(z_L,y) \\
+& & \mathcal{L}(z_L,y) \\
 & \text{s.t.}
 & & z_l = W_la_{l-1},  l = 1,2,...,L \\
 & & & a_l = h_l(z_l),  l = 1,2,...L-1 \label{eq:model}
@@ -89,10 +91,10 @@ Following the idea of \cite{9}, the original unconstrained problem (\ref{eq:min}
 
 \section{Study on Goldstein ADMM} \label{studycase}
 \subsection{The Proposed Method} \label{method}
-In work \cite{9}, they proposed a method to solve the constrained problem (\ref{eq:model}) by combining Bregman iterative update with an alternating minimisation strategy. They first relax the constraints by adding $l_2$ penalty functions to the objective function, which is actually a quadratic penalty formulation. Then  Lagrange multipliers are applied to output term $z_L$ to exactly enforce equality constraints, which yields the following unconstrained problem: \\
+In work \cite{9}, they proposed a method to solve the constrained problem (\ref{eq:model}) by combining Bregman iterative update with an alternating minimization strategy. They first relax the constraints by adding $l_2$ penalty functions to the objective function, which is actually a quadratic penalty formulation. Then  Lagrange multipliers are applied to output term $z_L$ to exactly enforce equality constraints, which yields the following unconstrained problem: \\
 \begin{equation}
 \begin{aligned}
-\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} & l(z_L,y) \\
+\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} & \mathcal{L}(z_L,y) \\
 +  \langle z_L, &\lambda \rangle + \beta_L||z_L -W_La_{L-1}||^2 \\
 + \sum_{l=1}^{L-1}&[\gamma_l||a_l - h_l(z_l)||^2 + \beta_l||z_l - W_la_{l_1}||^2]
 \label{eq:breg_model}
@@ -103,7 +105,7 @@ where $\{\gamma_l \}$ and $\{\beta_l\}$ are constants that control the weight of
 Noting (\ref{eq:breg_model}) is not a classical ADMM formulation, because the Lagrange multiplier is added only to the objective term $z_L$. A true ADMM formulation should be:
 \begin{equation}
 \begin{aligned}
-\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} & l(z_L,y) \\
+\underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}} & \mathcal{L}(z_L,y) \\
 +  \sum_{l=1}^{L}&[\langle \lambda_l, z_l - W_la_{l-1} \rangle + \beta_l||z_l - W_la_{l-1}||^2] \\
 + \sum_{l=1}^{L-1}&[\langle \eta_l, a_l - h_l(z_l) \rangle + \gamma_l||a_l - h_l(z_l)||^2 ]
 \label{eq:admm_model}
@@ -127,13 +129,13 @@ u^{k+1} \leftarrow \underset{u}{\text{argmin}} \: D_J^{p^k}(u, u^k) + {\frac{1}{
 \end{equation}
 where $p^k \in \partial J(u^k)$ is the subgradient of $J$ at $u^k$ and $D_J^{p^k}(u, u^k) = J(u) - J(u^k) - \langle p^k, u - u^k\rangle $ is called Bregman Distance. Therefore, by definition of $D_J^{p^k}(u, u^k)$, the multiplier is added only to the objective variable $u$, and leave the constraints as $l_2$ penalty terms.
 
-In our problem (\ref{eq:model}), the objective variable is the output layer $z_L$. Thus $J(u) = l(z_L, y)$ and constraint $Au = b$ corresponds to only $z_L = W_La_{L-1}$. Therefore, applying (\ref{eq:breg}) to (\ref{eq:model}) gives the update of $z_L^{k+1}$:
+In our problem (\ref{eq:model}), the objective variable is the output layer $z_L$. Thus $J(u) = \mathcal{L}(z_L, y)$ and constraint $Au = b$ corresponds to only $z_L = W_La_{L-1}$. Therefore, applying (\ref{eq:breg}) to (\ref{eq:model}) gives the update of $z_L^{k+1}$:
 \begin{equation*}
 \begin{aligned}
 &z_L^{k+1} = \underset{z_L}{\text{argmin}} \: D_l^{p^k}(z_L, z_L^k) + \beta_L||z_L - W_La_L-1||^2\\
-&= \underset{z_L}{\text{argmin}} \: l(z_L) -l(z_l^k) 
+&= \underset{z_L}{\text{argmin}} \: \mathcal{L}(z_L) -\mathcal{L}(z_l^k) 
  - \langle  \partial z_L^k, z_L - z_L^k \rangle +  \beta_L||z_L - W_La_L-1||^2\\
-&= \underset{z_L}{\text{argmin}} \: l(z_L) 
+&= \underset{z_L}{\text{argmin}} \: \mathcal{L}(z_L) 
  - \langle \partial(z_L^k), z_L \rangle + \beta_L||z_L - W_La_L-1||^2
  \label{eq:zL}
 \end{aligned} 
@@ -169,7 +171,7 @@ initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
 \end{algorithm}
 
 \subsection{Implementation and Evaluation}
-We implemented the updates of  Algorithm \ref{alg:gold_admm} using Python. In this section, we will explain the details on how we implement these sub-steps. First, we choose the most widely adopted rectified linear units(ReLUs) to be the activation function $h$, which is defined as:
+We implemented the updates of  Algorithm \ref{alg:goldADMM} using Python. In this section, we will explain the details on how we implement these sub-steps. First, we choose the most widely adopted rectified linear units(ReLUs) to be the activation function $h$, which is defined as:
 \begin{center}
 $h(x) = \begin{cases} x, & \mbox{if } x> 0 \\0, & \mbox{otherwise }\end{cases} $
 \end{center}
@@ -184,16 +186,16 @@ Then we get element-wise update of $(z_l)_i$ in following closed form:
 $(z_l)_i = \begin{cases} \frac{\gamma_la_l + \beta_lW_la_{l-1}}{\gamma_l + \beta_l}, & \mbox{if} (z_l)_i> 0 \\(W_la_{l-1})_i, & \mbox{otherwise}\end{cases} $
 \end{center}
 Finally, we do projection of $(z_l)_i$ to corresponding feasible space. \\\\
-\textbf{Update $z_L$:  }  We have to first decide the choice of loss function $l$. We tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimisation subproblem. Both of them worked out and achieved reasonable results. 
+\textbf{Update $z_L$:  }  We have to first decide the choice of loss function $l$. We tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimization subproblem. Both of them worked out and achieved reasonable results. 
 
-To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. The weight matrix $W$ is initialised with random samples from $N(\mu=0, \sigma^2=1)$ gaussian distribution and then multiplied with $\epsilon$. 
+To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. The weight matrix $W$ is initialized with random samples from $N(\mu=0, \sigma^2=1)$ Gaussian distribution and then multiplied with $\epsilon$. 
 
 After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l$, etc.), the results giving the best accuracy rate are demonstrated in TABLE \ref{tab:res1}
 :
 \begin{table}[h]
 \centering
 \caption{}
-\begin{tabular}{c|c|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
 		Hidden Layers & Accuracy[\%] & Energy &Time[s]\\
 \hline
@@ -205,13 +207,27 @@ After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l
 \end{table}
 
 \subsection{Analysis}
-According to the methods published in "The MNIST Dataset" \footnote{http://yann.lecun.com/exdb/mnist/}, ANN should achieve at least 95\% accuracy. The implementation from Tensorflow results an accuracy around 92\%. Additionally, the loss energy doesnot converge to the optimal one, i.e. it stops decaying around 2 but the optimal result should be 0, which is shown in Fig.\ref{fig:emergySame}.
+According to the methods published in "The MNIST Dataset" \footnote{http://yann.lecun.com/exdb/mnist/}, ANN should achieve at least 95\% accuracy. The implementation from Tensorflow results an accuracy around 92\%. Additionally, the loss energy does not converge to the optimal one, i.e. it stops decaying around 2 but the optimal result should be 0, which is shown in Fig.\ref{fig:energySame}.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{figure/energy_has_lambda.png}
+\caption{The energy converges to 2.08 with Goldstein ADMM}
+\label{fig:energySame}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{figure/energy_no_lambda.png}
+\caption{The energy converges to 0 without $\lambda$}
+\label{fig:energyWithoutLambda}
+\end{figure}
 
 Recall the difference between the Goldstein ADMM and the classical ADMM, the Lagrange multiplier and the Bregman iteration might contribute to the low performance. Therefore, we remove the Lagrange item and only include the quadratic penalties into objective function.
 
-We apply Algorithm \ref{alg:goldADMM} with $\lambda=0$ and deleting line 10 to solve equation \eqref{eq:quadratic_only}. A result with lower energy and higher accuracy is achieved, which is illustrated in Fig.\ref{fig:energyWithoutLambda}. Based on this fact, we guess the Bregman iteration and the Lagrange multipllier are the main reason for the low performance.
+We apply Algorithm \ref{alg:goldADMM} with $\lambda=0$ and deleting line 10 to solve equation \eqref{eq:quadratic_only}. A result with lower energy and higher accuracy is achieved, which is illustrated in Fig.\ref{fig:energyWithoutLambda}. Based on this fact, we guess the Bregman iteration and the Lagrange multiplier are the main reason for the low performance.
 
-To analyze the reason mathmatically, we introduce a simple problem:
+To analyze the reason mathematically, we introduce a simple problem:
 \begin{equation}
 \begin{aligned}
 & \underset{w,a}{\text{minimize}}  & & (a-1)^2 \\
@@ -234,7 +250,7 @@ a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
 \end{aligned}
 \label{eq:demoupdate}
 \end{equation}
-This test example cannot return the result $w=1,a=1$ unless one of them is initialized as 1. However, the result can always satisfy the constraint. This is because of the property of Bregman iteration: once a feasible result is achieved, the iteration stops and it is the optimal one. It is obvious that when $w^k$ and $a^k$ satisfy the constarints, equation \eqref{eq:demoupdate} will stop updating. To show the rest of this property, recall that Bregman iteration wants to minize the Bregman distance $D^p_J(u,v) = J(u)-J(v)-<p,u-v>, p \in \partial J(v)$ which is nonagtive. Therefore, substitue our problem into the nonagtive inequality, for any $a$, we can get
+This test example cannot return the result $w=1,a=1$ unless one of them is initialized as 1. However, the result can always satisfy the constraint. This is because of the property of Bregman iteration: once a feasible result is achieved, the iteration stops and it is the optimal one. It is obvious that when $w^k$ and $a^k$ satisfy the constraints, equation \eqref{eq:demoupdate} will stop updating. To show the rest of this property, recall that Bregman iteration wants to minimize the Bregman distance $D^p_J(u,v) = J(u)-J(v)-<p,u-v>, p \in \partial J(v)$ which is nonnegative. Therefore, substitute our problem into the nonnegative inequality, for any $a$, we can get
 \begin{equation}
 \begin{aligned}
 J(a^k) & \leq J(a) -(a-a^k) \cdot \lambda^k \\
@@ -252,7 +268,7 @@ In fact, we can construct a new value $u = [w,a]^T$ and rewrite the problem in e
 \end{equation}
 then if we apply Bregman iteration to above problem, which is classical Bregman iteration, the result is correct. In this case, the Lagrange multiplier $\lambda$ is a 2x1 matrix, which means updating $w$ should consider $\lambda$.
 
-All above are discussed in linear case, we also tested the same idea in nonliear case, this Bregman iteration cannot work neither. Therefore, we conclude that the reason why Goldstein ADMM cannot work is that the Bregman iteration and Lagrange multiplier should not only be considered for $z_L$ only.
+All above are discussed in linear case, we also tested the same idea in nonlinear case, this Bregman iteration cannot work neither. Therefore, we conclude that the reason why Goldstein ADMM cannot work is that the Bregman iteration and Lagrange multiplier should not only be considered for $z_L$ only.
 
 \section{Improvement based on Goldstein ADMM} \label{improvement}
 In this section, we propose our improvement based on Goldstein ADMM. We first try to solve equation \eqref{eq:model} using classical ADMM. It turns out that classical ADMM cannot perform stably. Inspired by the quadratic penalty method, we include only $l_2$ norm penalty in to objective function. This method can return a sequence with decaying energy to 0. Nonetheless, the constraints in equation \eqref{eq:model} are satisfied slowly and even not satisfied if the parameter $\gamma, \beta$ are not chose correctly. Additionally, we notice that if $\beta$ in Algorithm \ref{alg:goldADMM} is sufficient small, it is almost same as the quadratic penalty method. Therefore, we figure out one algorithm which can converge to optimal solution to a certain degree and the constraints are satisfied.
@@ -269,24 +285,37 @@ According to previous analysis, the Lagrange multiplier and Bregman iteration ar
 \end{equation}
 This optimization problem can be solved by Algorithm \ref{alg:goldADMM} with a little modification mentioned before.
 
-It is obvious that once the optimal value is got, the corresponding $\{W_l\}$, $\{a_l\}$,$\{z_l\}$ are feasible for equation \eqref{eq:model}. However, the experiments show that the norms of constraints decays slowly, as illustrated in Fig. This is caused by the property of ADMM that original complex problem is decomposed into several simpler subproblems. Updating $\{a_l\}$ and $\{z_l\}$ become a trade-off between satisfying the constraints and minimizing loss function. If increasing the weight of each constraint, constraints are satisfied faster with higher loss energy. Additionally, increasing the iteration number can satisfy the constraints and lower the loss energy at the same time, which accounts for more computational expensive especially for large data set.
+\begin{figure*}
+\centering
+\begin{subfigure}{0.8\columnwidth}
+\centering
+\includegraphics[width=0.7\columnwidth]{figure/aConstraint_has_lambda.png}
+\caption{$||a_l-h_l(z_l)||^2$ with Lagrange multiplier $\lambda$}
+\end{subfigure}
+\begin{subfigure}{0.8\columnwidth}
+\centering
+\includegraphics[width=0.7\columnwidth]{figure/zConstraint_has_lambda.png}
+\caption{$||z_l-W_la_{l-1}||^2$ with Lagrange multiplier $\lambda$}
+\end{subfigure}
+\begin{subfigure}{0.8\columnwidth}
+\centering
+\includegraphics[width=0.7\columnwidth]{figure/aConstraint_no_lambda.png}
+\caption{$||a_l-h_l(z_l)||^2$ without Lagrange multiplier $\lambda$}
+\end{subfigure}
+\begin{subfigure}{0.8\columnwidth}
+\centering
+\includegraphics[width=0.7\columnwidth]{figure/zConstraint_no_lambda.png}
+\caption{$||z_l-W_la_{l-1}||^2$ without Lagrange multiplier $\lambda$}
+\end{subfigure}
+\caption{The norm of constraints, $l=1$}
+\label{fig:cmpCons}
+\end{figure*}
+
+It is obvious that once the optimal value is got, the corresponding $\{W_l\}$, $\{a_l\}$,$\{z_l\}$ are feasible for equation \eqref{eq:model}. However, the experiments show that the norms of constraints decays slowly, as illustrated in Fig.\ref{fig:cmpCons}. This is caused by the property of ADMM that original complex problem is decomposed into several simpler subproblems. Updating $\{a_l\}$ and $\{z_l\}$ become a trade-off between satisfying the constraints and minimizing loss function. If increasing the weight of each constraint, constraints are satisfied faster with higher loss energy. Additionally, increasing the iteration number can satisfy the constraints and lower the loss energy at the same time, which accounts for more computational expensive especially for large data set.
 
 \subsection{Bregman iteration with increasing penalty weights}
-To overcome the disadvantage of quadratic penalty method, a time-saving algorithm, which can satisfy constraints and minimize loss function at the same time, is proposed. Inspired by above discussion about the weight of each constraints, in this algorithm, the penalty weights are increasing at each iteration. To improve the efficiency, we also implement mini-batch for this algorithm. Besides, the regularization item is involved in the object function to prevent overfitting and numerical errors.
+To overcome the disadvantage of quadratic penalty method, a time-saving algorithm, which can satisfy constraints and minimize loss function at the same time, is proposed. Inspired by above discussion about the weight of each constraints, in this algorithm, the penalty weights are increasing at each iteration. To improve the efficiency, we also implement mini-batch for this algorithm. Besides, the regularization item is involved in the object function to prevent over-fitting and numerical errors.
 
-\textbf{Increasing penalty weights}: according to the discussion in quadratic penalty method, the weights of penalty play an important role in satisfying constraints and minimizing loss function. Therefore, the main idea is that the initial value of the weights are sufficient small and at each iteration, the weights are multiplied by a constant $\rho>1$. We also involve the Lagrange multiplier $\lambda$ and apply the same Bregman iteration as Goldstein ADMM to force the constarints to be satisfied faster. The main reason is that with small $\{beta_L\}$, the $\lambda$ has ignorable effect on updating $z_L$ since $\lambda$ is initialized with 0. Thus, at the beginning iterations, a $z_L$ which can minizing the loss function sufficiently, is achieved. When the $\{beta_L\}$ becomes large enough, $z_L$ has to satisfy the constraints as well. To validate our idea, we still use euqation \eqref{eq:demo}. $\beta$ is initialized with 0.0001 and $rho$ is 1.01. For each iteration $k$, we get
-\begin{equation}
-\begin{aligned}
-w^{k+1} &= 2-a^k \\
-a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
-\lambda^{k+1} &= \lambda^{k+1} + 2\beta(2-w^{k+1}-a^{k+1})\\
-\beta &= \beta \cdot \rho \\
-\end{aligned}
-\label{eq:demoupdate}
-\end{equation}
-The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increased, it cannot converge to the optimal result, which means this algorithm can only converges to the neighborhood of the optimal result. The radius of the neighborhood depends on the initial value of $\beta$. If $\beta$ is initialized with smaller positive value, a final result which is closer to optimal one is achieved, which coincides with above analysis. Another parameter $\rho$ is determined based on the initial value of $\beta$. Small $\rho$ leads to a slow speed of satisfying the constraints. Too large $\rho$ results in a high loss energy. Besides, this algorithm is also tested on nonlinear case and can work as well. Therefore, even with the disadvantage that it can only reach the neighborhood, we decide to apply this algorithm to solve equation \eqref{eq:model}.
-
-\textbf{Other improvement}: We implement the mini-batch to our algorithm. The basic idea is that a batch is randomly chose from the data set. Then the neural network is trained by this batch. After several iterations, a new batch is chose and train the neural network based on previous results. Besides, we also include the regularization item for $\{W_l\}$ to solve the numerical errors and overfitting. The new problem then becomes:
 \begin{equation}
 \begin{aligned} 
 & \underset{\{W_l\},\{a_l\}, \{z_l\}}{\text{minimize}}
@@ -296,7 +325,7 @@ The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increas
 & & & a_l = h_l(z_l),  l = 1,2,...L-1 \label{eq:modelWithReg}
 \end{aligned}
 \end{equation}
-where $\alpha$ is the weight of regularization. The new algorithm to solve this optimization problem is discribed in Algorithm \ref{alg:ourADMM}.
+where $\alpha$ is the weight of regularization. The new algorithm to solve this optimization problem is described in Algorithm \ref{alg:ourADMM}.
 \begin{algorithm} 
 \caption{ADMM for Neural Networks}
 \label{alg:ourADMM}
@@ -322,7 +351,45 @@ initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
 
 \end{algorithm}
 
+\textbf{Increasing penalty weights}: according to the discussion in quadratic penalty method, the weights of penalty play an important role in satisfying constraints and minimizing loss function. Therefore, the main idea is that the initial value of the weights are sufficient small and at each iteration, the weights are multiplied by a constant $\rho>1$. We also involve the Lagrange multiplier $\lambda$ and apply the same Bregman iteration as Goldstein ADMM to force the constraints to be satisfied faster. The main reason is that with small $\{beta_L\}$, the $\lambda$ has ignorable effect on updating $z_L$ since $\lambda$ is initialized with 0. Thus, at the beginning iterations, a $z_L$ which can minimizing the loss function sufficiently, is achieved. When the $\{beta_L\}$ becomes large enough, $z_L$ has to satisfy the constraints as well. To validate our idea, we still use equation \eqref{eq:demo}. $\beta$ is initialized with 0.0001 and $rho$ is 1.01. For each iteration $k$, we get
+\begin{equation}
+\begin{aligned}
+w^{k+1} &= 2-a^k \\
+a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
+\lambda^{k+1} &= \lambda^{k+1} + 2\beta(2-w^{k+1}-a^{k+1})\\
+\beta &= \beta \cdot \rho \\
+\end{aligned}
+\label{eq:demoupdate}
+\end{equation}
+The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increased, it cannot converge to the optimal result, which means this algorithm can only converges to the neighborhood of the optimal result. The radius of the neighborhood depends on the initial value of $\beta$. If $\beta$ is initialized with smaller positive value, a final result which is closer to optimal one is achieved, which coincides with above analysis. Another parameter $\rho$ is determined based on the initial value of $\beta$. Small $\rho$ leads to a slow speed of satisfying the constraints. Too large $\rho$ results in a high loss energy. Besides, this algorithm is also tested on nonlinear case and can work as well. Therefore, even with the disadvantage that it can only reach the neighborhood, we decide to apply this algorithm to solve equation \eqref{eq:model}.
+
+\begin{table*}[h]
+\centering
+\caption{}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & inIteration & outIteration & weight decay & final energy & train accuracy & test accuracy\\
+\hline
+		(300) & 1e-6 & 1e-6 & 1.05 & 4 & 400 & 1e-3 & 0.15378 & 95.4\% & 94.8\% \\
+		(500,300) & 1e-8 & 1e-8 & 1.05 & 4 & 400 & 1e-3 & 0.15871 & 95.2 \% & 95.1\% \\ 
+\hline
+\end{tabular}
+\label{tab:parMNIST}
+\end{table*}
+
+\textbf{Other improvement}: We implement the mini-batch to our algorithm. The basic idea is that a batch is randomly chose from the data set. Then the neural network is trained by this batch. After several iterations, a new batch is chose and train the neural network based on previous results. Besides, we also include the regularization item for $\{W_l\}$ to solve the numerical errors and over-fitting. The new problem then becomes:
+
+
 \section{Experiments} \label{experiment}
+We use three different data set to validate our algorithm. The first is MNIST database of handwritten digits which contains 60,000 training examples and 10,000 testing examples. Each example is a black-white image in pixels of 28x28. The second is Moon.......
+
+
+
+\subsection{MNIST}
+For this dataset, two neural network are applied. The first neural network contains one hidden layer of 300 neurons. Another neural network contains two hidden layers. The first hidden layer contains 500 neurons while the second one contains 300 neurons. To train the neural network, we apply mini batch to both of them. The batch size is 400. The total training set are 60,000 examples and no validation examples. Other parameters and the final result are showed in table \ref{tab:parMNIST}.
+
+
+The accuracy is not as good as the same neural network published on the website. Therefore, we also try to train the neural network without mini batch. The results become better than this which can achieve a accuracy around 97\% and energy smaller than 0.1. 
 \section{Conclusion} \label{conclusion}
 
 %\addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
