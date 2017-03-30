@@ -29,7 +29,7 @@ network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batch
 
 weightConsWeight = 0.000001
 activConsWeight = 0.000001
-growingStep = 1.05
+growingStep = 1.04
 iterOutNum = 400
 iterInNum = 4
 hasLambda = True
