@@ -129,7 +129,7 @@ class NeuralNetwork():
                                         lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=False)
             
             # Do evaluation for each batch
-            if evaluate and k % 20 == 0:
+            if evaluate and (k % 20 == 0 or k == (iterOutNum - 1)):
                 loss = self.validate(w, lossType, dataType='train')
                 #loss = self.getFinalDataLoss(Xtr, y, w, lossType)
                 print 'Outiter %d eval loss(global): %f' %(k, loss)
@@ -167,7 +167,7 @@ class NeuralNetwork():
 	# ADMM Update
         w, Lambda = self.admmUpdate(y, a, z, w, L, iterNum, beta, gamma, growingStep, hasLambda, calLoss, 
                                     lossType, minMethod, tau, ite, Lambda, regWeight=regWeight, dampWeight=dampWeight, innerEval=evaluate)
-            
+        
         # Save the W to network
         self.W = w
         self.zL = z[L]     
@@ -304,7 +304,7 @@ class NeuralNetwork():
             gamma *= growingStep 
 
             t3 = time.time()
-            if i % 10 == 0 and innerEval:
+            if (i % 20 == 0 or i == (iter - 1)) and innerEval:
                 loss = self.getFinalDataLoss(Xtr, y, w, lossType)
                 print 'iter %d loss:%f'%(i,loss)
                 #print 'iter %d t1:%fs t2:%fs loss:%f'%(i, t2-t1, t3 - t2, loss)
