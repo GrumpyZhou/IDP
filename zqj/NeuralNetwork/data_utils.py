@@ -127,7 +127,7 @@ class DataSet():
             self.images = self.images[:,perm]
             self.labels = self.labels[perm]
             # Start next round
-            print 'Start round #',self.round
+            #print 'Start round #',self.round
             start = 0
             self.index = batchSize
             assert batchSize <= self.imgNum

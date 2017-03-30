@@ -57,6 +57,17 @@ class NeuralNetwork():
         L = len(hiddenLayer)
         a = [Xtr]
         z = [np.zeros((0))]
+        if epsilon == 0.0:
+            print 'Glorot'
+            dev = [1.0/Xtr.shape[0]]
+            for n in hiddenLayer:
+                dev.append(2.0/n)
+            dev = np.sqrt(dev)
+        else:
+            dev = [epsilon]
+            for i in range(0, len(hiddenLayer)):
+                dev.append(epsilon)
+        print 'dev: %s'%dev
         
         if initW != None:
             w = initW
@@ -66,13 +77,13 @@ class NeuralNetwork():
             z.append(w[L+1].dot(a[L]))
             
         else:
-            w = [np.zeros((0))]    
+            w = [np.zeros((0))]
             for l in range(0, L):
-                w.append(epsilon*np.random.randn(hiddenLayer[l], a[l].shape[0]))
+                w.append(dev[l]*np.random.randn(hiddenLayer[l], a[l].shape[0]))
                 z.append(w[l+1].dot(a[l]))
                 a.append(self.ReLU(z[l+1]))
                 
-            w.append(epsilon*np.random.randn(classNum, a[L].shape[0]))
+            w.append(dev[L]*np.random.randn(classNum, a[L].shape[0]))
             z.append(w[L+1].dot(a[L]))
             
 	return a, z, w
