@@ -67,7 +67,7 @@ class NeuralNetwork():
             dev = [epsilon]
             for i in range(0, len(hiddenLayer)):
                 dev.append(epsilon)
-        print 'dev: %s'%dev
+        #print 'dev: %s'%dev
         
         if initW != None:
             w = initW

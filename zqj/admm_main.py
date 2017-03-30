@@ -14,12 +14,13 @@ print '\n\nTesting date:  %s without minibatch' % time.strftime("%x")
 """
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
-
 """
 #mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
 #cifarDir = "NeuralNetwork/benchmarkData/cifarDataset.mat"
 moonDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
-datasets = getDataSetsFromMat(moonDir, valSize=valSize)
+
+spiralEasyDir = "NeuralNetwork/benchmarkData/spiralEasyDataset.mat" 
+datasets = getDataSetsFromMat(spiralEasyDir, valSize=valSize)
 
 train = datasets['train']
 test = datasets['test']
@@ -33,23 +34,23 @@ X_te, Y_te = test.images[:,range(teSize)], test.labels[range(teSize)]
 print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_te.shape
 
 # Initialize networkfrom datetime import datetime, date, time
-hiddenLayer = [10, 10, 10, 10, 10]
+hiddenLayer =[50,50]#,10,10,10]
 classNum = 2
-epsilon= 0.00001 
+epsilon= 0.1 # Glorot if 0.0
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
-weightConsWeight = 0.001
-activConsWeight = 0.001
-growingStep = 1.001
-iterNum = 500
-hasLambda = False 
+weightConsWeight = 0.01
+activConsWeight = 0.01
+growingStep = 1.03
+iterNum = 350
+hasLambda = True
 calLoss = False
-regWeight = 1
+regWeight = 0.001
 
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)
-print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
+print 'weightConsWeight:%.10f activConsWeight:%.10f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
 tic = time.time()
 network.trainWithoutMiniBatch(weightConsWeight, activConsWeight, growingStep, iterNum, hasLambda, 
                               calLoss, lossType = 'smx', minMethod = 'prox', tau= 0.01, ite= 25, 
@@ -64,11 +65,26 @@ print 'Prediction of test accuracy: %f' %np.mean(Y_te_pred == Y_te)
 Y_tr_pred = network.predict(X_tr)
 print 'Prediction of train accuracy: %f' %np.mean(Y_tr_pred == Y_tr)
 
-
-# Save weight 
-np.save('./weight.npy', network.W)
-
 # For visualization
+"""
+L = len(hiddenLayer)
+if calLoss:
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111)
+    ax1.plot(network.dataLoss)
+    fig1.savefig('fig/energy_no_lambda.png')
+
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111)
+    ax2.plot(network.aConstrLoss[0])
+    fig2.savefig('fig/aConstraint_no_lambda.png')
+
+    fig3 = plt.figure()
+    ax3 = fig3.add_subplot(111)
+    ax3.plot(network.zConstrLoss[0])
+    fig3.savefig('fig/zConstraint_no_lambda.png')
+"""
+
 L = len(hiddenLayer)
 if calLoss:
     fig = plt.figure()

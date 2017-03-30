@@ -9,12 +9,15 @@ from NeuralNetwork.neural_network import *
 
 print '\n\nTesting date:  %s with minibatch' % time.strftime("%x")
 
-(batchSize, testSize, valSize)=(380, 500, 0)
-mnistDir = "NeuralNetwork/MnistData"
-datasets = getMnistDataSets(mnistDir,valSize=valSize)
+(batchSize, testSize, valSize)=(400, 10000, 0)
+#mnistDir = "NeuralNetwork/MnistData"
+#datasets = getMnistDataSets(mnistDir,valSize=valSize)
 
-#mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
-#datasets = getDataSetsFromMat(mnistDir, valSize=valSize)
+mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
+#cifarDir = "NeuralNetwork/benchmarkData/cifarDataset.mat"
+#spiralEasyDir = "NeuralNetwork/benchmarkData/spiralEasyDataset.mat" 
+
+datasets = getDataSetsFromMat(mnistDir, valSize=valSize)
 train = datasets['train']
 test = datasets['test']
 if valSize != 0:
@@ -27,25 +30,25 @@ Xtr, Ytr = train.images, train.labels
 
 # Initialize Parameters
 hiddenLayer = [300]
-classNum = 10 
-epsilon= 0.01 
+classNum = 10
+epsilon= 0.1 #dev 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=batchSize, valSize=valSize)
 
-weightConsWeight = 0.001
-activConsWeight = 0.001
+weightConsWeight = 0.000001
+activConsWeight = 0.000001
 growingStep = 1.05
-iterOutNum = 30
+iterOutNum = 400
 iterInNum = 4
 hasLambda = True
 calLoss = False
-regWeight = 1.0
+regWeight = 0.001
 prox_ite = 10
 
 
 #Logging 
 
 print 'Config: lambda:%s epsilon:%f in_iter:%d out_iter:%d batchsz:%d prox_it:%d'%(hasLambda,epsilon,iterInNum, iterOutNum, batchSize, prox_ite)
-print 'weightConsWeight:%f activConsWeight:%f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
+print 'weightConsWeight:%.10f activConsWeight:%.10f growingStep:%f regweight:%f'%(weightConsWeight,activConsWeight,growingStep, regWeight)
 
 # Train 
 tic = time.time()
@@ -65,4 +68,12 @@ print 'Prediction of test accuracy: %f' %np.mean(Yte_pred == Yte)
 Ytr_pred = network.predict(Xtr)
 print 'Prediction of train accuracy: %f' %np.mean(Ytr_pred == Ytr)
 
-
+"""
+# For visualization
+L = len(hiddenLayer)
+if calLoss:
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(network.dataLoss)
+    fig.savefig('fig/admm.png')
+"""
