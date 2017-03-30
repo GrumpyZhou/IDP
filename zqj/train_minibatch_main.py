@@ -9,7 +9,7 @@ from NeuralNetwork.neural_network import *
 
 print '\n\nTesting date:  %s with minibatch' % time.strftime("%x")
 
-(batchSize, testSize, valSize)=(380, 500, 0)
+(batchSize, testSize, valSize)=(380, 10000, 0)
 mnistDir = "NeuralNetwork/MnistData"
 datasets = getMnistDataSets(mnistDir,valSize=valSize)
 
