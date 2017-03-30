@@ -28,7 +28,7 @@ print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_
 # Initialize networkfrom datetime import datetime, date, time
 hiddenLayer = [50,50]
 classNum = 2
-epsilon= 0.0 
+epsilon= 0.01 
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
