@@ -27,6 +27,7 @@
 \usepackage{blindtext}
 \usepackage{subcaption}
 \usepackage{graphicx}
+\usepackage{balance}
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 
 \title{\LARGE \bf
@@ -313,6 +314,34 @@ This optimization problem can be solved by Algorithm \ref{alg:goldADMM} with a l
 
 It is obvious that once the optimal value is got, the corresponding $\{W_l\}$, $\{a_l\}$,$\{z_l\}$ are feasible for equation \eqref{eq:model}. However, the experiments show that the norms of constraints decays slowly, as illustrated in Fig.\ref{fig:cmpCons}. This is caused by the property of ADMM that original complex problem is decomposed into several simpler subproblems. Updating $\{a_l\}$ and $\{z_l\}$ become a trade-off between satisfying the constraints and minimizing loss function. If increasing the weight of each constraint, constraints are satisfied faster with higher loss energy. Additionally, increasing the iteration number can satisfy the constraints and lower the loss energy at the same time, which accounts for more computational expensive especially for large data set.
 
+\begin{table*}[h]
+\centering
+\caption{Parameters and Results on MNIST}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & inIteration & outIteration & time & final energy & train accuracy & test accuracy\\
+\hline
+		(300) & 1e-6 & 1e-6 & 1.05 & 4 & 400 & 220s& 0.15378 & 95.4\% & 94.8\% \\
+		(500,300) & 1e-8 & 1e-8 & 1.05 & 4 & 400 & 504s & 0.15871 & 95.2 \% & 95.1\% \\ 
+\hline
+\end{tabular}
+\label{tab:parMNIST}
+\end{table*}
+
+\begin{table*}[h]
+\centering
+\caption{Parameters and Results on CrescentMoon}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & iters & time & final energy & train acc & test acc\\
+\hline
+		(50,50) & 1e-2 & 1e-2 & 1.01 & 450 &  71s & 0.1026 & 95.40\% & 94.74\% \\
+		(10,10,10,10,10) & 1e-2 & 1e-2 & 1.02 & 450 & 18s & 0.1063 & 95.46 \% & 94.80\% \\ 
+\hline
+\end{tabular}
+\label{tab:parMoon}
+\end{table*}
+
 \subsection{Bregman iteration with increasing penalty weights}
 To overcome the disadvantage of quadratic penalty method, a time-saving algorithm, which can satisfy constraints and minimize loss function at the same time, is proposed. Inspired by above discussion about the weight of each constraints, in this algorithm, the penalty weights are increasing at each iteration. To improve the efficiency, we also implement mini-batch for this algorithm. Besides, the regularization item is involved in the object function to prevent over-fitting and numerical errors.
 
@@ -363,19 +392,7 @@ a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
 \end{equation}
 The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increased, it cannot converge to the optimal result, which means this algorithm can only converges to the neighborhood of the optimal result. The radius of the neighborhood depends on the initial value of $\beta$. If $\beta$ is initialized with smaller positive value, a final result which is closer to optimal one is achieved, which coincides with above analysis. Another parameter $\rho$ is determined based on the initial value of $\beta$. Small $\rho$ leads to a slow speed of satisfying the constraints. Too large $\rho$ results in a high loss energy. Besides, this algorithm is also tested on nonlinear case and can work as well. Therefore, even with the disadvantage that it can only reach the neighborhood, we decide to apply this algorithm to solve equation \eqref{eq:model}.
 
-\begin{table*}[h]
-\centering
-\caption{}
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
-\hline
-	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & inIteration & outIteration & weight decay & final energy & train accuracy & test accuracy\\
-\hline
-		(300) & 1e-6 & 1e-6 & 1.05 & 4 & 400 & 1e-3 & 0.15378 & 95.4\% & 94.8\% \\
-		(500,300) & 1e-8 & 1e-8 & 1.05 & 4 & 400 & 1e-3 & 0.15871 & 95.2 \% & 95.1\% \\ 
-\hline
-\end{tabular}
-\label{tab:parMNIST}
-\end{table*}
+
 
 \textbf{Other improvement}: We implement the mini-batch to our algorithm. The basic idea is that a batch is randomly chose from the data set. Then the neural network is trained by this batch. After several iterations, a new batch is chose and train the neural network based on previous results. Besides, we also include the regularization item for $\{W_l\}$ to solve the numerical errors and over-fitting. The new problem then becomes:
 
@@ -384,29 +401,16 @@ The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increas
 In this section, we show the numeric results of Alg \ref{alg:ourADMM} on three different datasets: Mnist and CresentMoon. The following experiments were run on CPU (MacBook Air Early 2014 with 1,7 GHz Intel Core i7). For every case, we pick weight decay as 1e-3.
 
 \subsection{Mnist}
-The Mnist dataset has 60,000 training images and 10000 tesing images. We used all 60,000 examples for training and didn't have any validation examples. To validate the algorithm, we trained the network with two structure and the corresponding result is shown in table  \ref{tab:parMNIST}.  In both case, we initialize the all weight matrices $w_l$ as zero mean Gaussian random weights with standard deviation $\epsilon$ = 1e-1.We applied mini-batch for training both of them for time efficiency. Each batch has 400 images, and 4 ADMM steps are applied per batch. We found that both networks are better trained by starting with very small penalty parameters $\{\beta_l\}$, $\{\gamma_l\}$ and then increasing them with small growing step $\rho$. 
-
-
-\begin{table*}[h]
-\centering
-\caption{Results on CrescentMoon}
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
-\hline
-	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & iters & time & final energy & train acc & test acc\\
-\hline
-		(50,50) & 1e-2 & 1e-2 & 1.01 & 450 &  71s & 0.1026 & 95.40\% & 94.74\% \\
-		(10,10,10,10,10) & 1e-2 & 1e-2 & 1.02 & 450 & 18s & 0.1063 & 95.46 \% & 94.80\% \\ 
-\hline
-\end{tabular}
-\label{tab:parMoon}
-\end{table*}
+The Mnist dataset has 60,000 training images and 10000 tesing images. We used all 60,000 examples for training and didn't have any validation examples. To validate the algorithm, we trained the network with two structure and the corresponding result is shown in table  \ref{tab:parMNIST}.  In both case, we initialize the all weight matrices $w_l$ as zero mean Gaussian random weights with standard deviation $\epsilon$ = 1e-1.We applied mini-batch for training both of them for time efficiency. Each batch has 400 images, and 4 ADMM steps are applied per batch. We found that both networks are better trained by starting with very small penalty parameters $\{\beta_l\}$, $\{\gamma_l\}$ and then increasing them with small growing step $\rho$. Additionally, the same networks are trained without mini batch. The accuracy around 97\% and energy lower than 0.1 can be achieved, while the computational time becomes extremely long.
 
 \subsection{CrescentMoon}
 This dataset is much smaller than Mnist, with 6867 training images, no validation images and 3133 testing image. This time we didn't use mini-batch during training. Two different network structures are trained and the corresponding result is shown in table  \ref{tab:parMoon}. In both case, we initialize the all weight matrices $w_l$ as zero mean Gaussian random weights with standard deviation $\epsilon$ = 1e-2. For the second case with more hidden layers i.e. (10,10,10,10,10), we notice much more unstable performance of the Alg \ref{alg:ourADMM}, compared with the first case. In table \ref{tab:parMoon}, the first configuration we can always get accuracy around 95.4\%. However, with the second configuration, the algorithm sometimes give testing accuracy only around 80\%, even though one can get accuracy around 95.4\% after several tryings.  In addition, we found for case two several settings can reach close testing accuracy, but also has similar unstable behavior. The reason of such an instability is not clear to us yet.
 
 \section{Conclusion} \label{conclusion}
+We implemented the ADMM from Goldstein on MNIST data set. However, this ADMM fails to achieve an expected result, which is caused by the Bregman iteration according to our analysis on a simple optimizing problem. To improve the Goldstein ADMM, we propose the ADMM with increasing weight parameters for constraints and the Bregman iteration is still applied to our ADMM. The experiement results show that this ADMM can achieve a higher accuracy and lower energy. There are still some open questions about this ADMM: i) the algorithm can only converge to the neighborhood of optimal results; ii) the instability for different data set; iii) the converge analysis of this ADMM.
 
-%\addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
+\balance
+%\addtolength{\textheight}{-10cm}   % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
                                   % the textheight of the last page by a suitable amount.
                                   % This command does not take effect until the next page
@@ -437,10 +441,6 @@ This dataset is much smaller than Mnist, with 6867 training images, no validatio
 \bibitem{9} Taylor, Gavin, et al. "Training neural networks without gradients: A scalable admm approach." International Conference on Machine Learning. 2016.
 
 \bibitem{10} Goldstein, Tom, and Stanley Osher. "The split Bregman method for L1-regularized problems." SIAM journal on imaging sciences 2.2 (2009): 323-343.
-
-\bibitem{11} 
-\bibitem{12} 
-\bibitem{13} 
 
 
 
