@@ -17,7 +17,7 @@ datasets = getMnistDataSets(mnistDir,valSize=valSize)
 """
 #mnistDir = "NeuralNetwork/benchmarkData/mnistDataset.mat"
 #cifarDir = "NeuralNetwork/benchmarkData/cifarDataset.mat"
-moonDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
+#moonDir = "NeuralNetwork/benchmarkData/crescentMoonDataset.mat"
 
 spiralEasyDir = "NeuralNetwork/benchmarkData/spiralEasyDataset.mat" 
 datasets = getDataSetsFromMat(spiralEasyDir, valSize=valSize)
@@ -36,17 +36,17 @@ print 'Xtr: ', X_tr.shape, 'Xte: ', X_te.shape, 'Ytr: ', Y_tr.shape, 'Yte: ', Y_
 # Initialize networkfrom datetime import datetime, date, time
 hiddenLayer =[50,50]#,10,10,10]
 classNum = 2
-epsilon= 0.1 # Glorot if 0.0
+epsilon= 0.001 # Glorot if 0.0
 network = NeuralNetwork(train, validation, classNum, hiddenLayer, epsilon, batchSize=trSize, valSize=valSize)
 
 # Train param
-weightConsWeight = 0.01
-activConsWeight = 0.01
-growingStep = 1.03
-iterNum = 350
-hasLambda = True
+weightConsWeight = 0.1 
+activConsWeight = 0.1
+growingStep = 1.00001
+iterNum = 200
+hasLambda = True 
 calLoss = False
-regWeight = 0.001
+regWeight = 0.01 
 
 
 print 'Config: lambda:%s epsilon:%f iter:%d'%(hasLambda,epsilon,iterNum)

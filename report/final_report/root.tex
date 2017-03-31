@@ -46,7 +46,7 @@ Report of Applying ADMM to Neural Network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{INTRODUCTION}
 \subsection{Artificial Neural Networks} 
-Artificial neural networks(ANN) are computational models, inspired by natural neural networks to learn useful information from data. They have been widely applied to tackle real-world problems and brought breakthrough to fields such as image recognition and natural language processing.  Before a neural network can actually perform pattern recognition tasks, it requires numerous learning on a specific dataset, which refers to the training process.
+Artificial neural networks(ANN) are computational models, inspired by natural neural networks to learn useful information(representation) from data. They have been widely applied to tackle real-world problems and brought breakthrough to fields such as image recognition and natural language processing.  Before a neural network can actually perform pattern recognition tasks, it requires numerous learning on a specific dataset, which refers to the training process.
  
  In ANN, a neuron as the core composing unit can be mathematically represented as a function $g: a \rightarrow z$
  \begin{equation}
@@ -70,7 +70,7 @@ As the activation function $h$ introduces non-linearity into the network model, 
 \subsection{Alternating Direction Method of Multipliers}
 In the context of optimisation, except for the gradient-based algorithms, there are still more sophisticated optimisation methods. The alternating direction method with multipliers (ADMM) has been one of most powerful and successful methods for solving constrained convex problems. Recent studies (e.g. \cite{5, 6, 7, 8}) on ADMM for non-convex optimization problem, show that ADMM also performs well on a broad class of solve non-convex problems. Compared with SGD methods, in ADMM the original complex problem is decomposed into several simpler subproblems that are often solvable in closed form. Furthermore, the decomposition leads to possibility of large-scale distributed computing environments.
 
-In this project, we are interested applying the specific optimisation method ADMM to the neural network training task. We follow the approach proposed in work \cite{9} and investigate whether ADMM can get rid of the troubles of SGD mentioned before.  In section \ref{preliminaries}, we state the concrete problem with mathematic notations. The Goldstein ADMM method proposed by work \cite{9} is fully studied in section \ref{studycase}, with practical experiments and theoretical analysis. In the following section \ref{improvement}, an improved version of this method is proposed and demonstrated. Then, the section \ref{experiment}, the improved version is evaluated on different datasets. Finally, section \ref{conclusion} comes to a conclusion based on previous results.
+In this project, we are interested applying a specific optimisation method ADMM to the training task. We follow the approach proposed in work \cite{9} and investigate whether ADMM can get rid of the troubles of SGD mentioned before.  In section \ref{preliminaries}, we state the concrete problem with mathematic notations. The Goldstein ADMM method proposed by work \cite{9} is fully studied in section \ref{studycase}, with practical experiments and theoretical analysis. In the following section \ref{improvement}, an improved version of this method is proposed and demonstrated. Then, the section \ref{experiment}, the improved version is extensively evaluated on different datasets and compared with various optimization approaches. Finally, section \ref{conclusion} comes to a conclusion based on previous results.
 
 \section{Preliminaries}\label{preliminaries}
 To verify the feasibility of training ANN with ADMM, we select the simplest feed-forward neural network as our training model. To define the problem, let's assume the network consists of $L$ layers. Given an input $a_{l-1}$ and its label $y$, the goal of training is to find the best weight $W$ which minimizes a loss function $\mathcal{L}$. The concrete mathematical model is defined as: 
@@ -127,7 +127,7 @@ u^{k+1} \leftarrow \underset{u}{\text{argmin}} \: D_J^{p^k}(u, u^k) + {\frac{1}{
 \label{eq:breg}
 \end{aligned} 
 \end{equation}
-where $p^k \in \partial J(u^k)$ is the subgradient of $J$ at $u^k$ and $D_J^{p^k}(u, u^k) = J(u) - J(u^k) - \langle p^k, u - u^k\rangle $ is called Bregman Distance. Therefore, by definition of $D_J^{p^k}(u, u^k)$, the multiplier is added only to the objective variable $u$, leaving the constraints as $l_2$ penalty terms.
+where $p^k \in \partial J(u^k)$ is the subgradient of $J$ at $u^k$ and $D_J^{p^k}(u, u^k) = J(u) - J(u^k) - \langle p^k, u - u^k\rangle $ is called Bregman Distance. Therefore, by definition of $D_J^{p^k}(u, u^k)$, the multiplier is added only to the objective variable $u$, and leave the constraints as $l_2$ penalty terms.
 
 In our problem (\ref{eq:model}), the objective variable is the output layer $z_L$. Thus $J(u) = \mathcal{L}(z_L, y)$ and constraint $Au = b$ corresponds to only $z_L = W_La_{L-1}$. Therefore, applying (\ref{eq:breg}) to (\ref{eq:model}) gives the update of $z_L^{k+1}$:
 \begin{equation*}
@@ -140,7 +140,7 @@ In our problem (\ref{eq:model}), the objective variable is the output layer $z_L
  \label{eq:zL}
 \end{aligned} 
 \end{equation*}
-The first-order optimality condition of $z_L$ gives immediately $\lambda$ update:
+The first-order optimality condition of (\ref{eq:zL}) gives immediately $\lambda$ update:
 \begin{equation*}
 \begin{aligned}
 &0 \in \partial(z_L^{k+1}) -  \partial(z_L^k) + 2 * \beta_L(z_L^{k+1} - W_La_{L-1}) \\
@@ -171,7 +171,7 @@ initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
 \end{algorithm}
 
 \subsection{Implementation and Evaluation}
-We implemented the updates of  Algorithm \ref{alg:goldADMM} using Python. In this section, we will explain the details on how we implement these sub-steps. First, we choose the most widely adopted rectified linear units (ReLUs) to be the activation function $h$, which is defined as:
+We implemented the updates of  Algorithm \ref{alg:goldADMM} using Python. In this section, we will explain the details on how we implement these sub-steps. First, we choose the most widely adopted rectified linear units(ReLUs) to be the activation function $h$, which is defined as:
 \begin{center}
 $h(x) = \begin{cases} x, & \mbox{if } x> 0 \\0, & \mbox{otherwise }\end{cases} $
 \end{center}
@@ -185,15 +185,29 @@ Then we get element-wise update of $(z_l)_i$ in following closed form:
 \begin{center}
 $(z_l)_i = \begin{cases} \frac{\gamma_la_l + \beta_lW_la_{l-1}}{\gamma_l + \beta_l}, & \mbox{if} (z_l)_i> 0 \\(W_la_{l-1})_i, & \mbox{otherwise}\end{cases} $
 \end{center}
-We do projection of $(z_l)_i$ to corresponding feasible space and pick the $(z_l)_i$ leading to the smaller value of $(l_{quad})_i$ where $l_{quad} = \gamma_l||a_l - h_l(z_l)||^2 + \beta_l||z_l - W_la_{l_1}||^2$ contains the $l_2$ penalty terms. \\\\
-\textbf{Update $z_L$:  }  We have to first decide the choice of loss function $l$. We tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimization subproblem i.e. the update of $z_L$. Both of them worked out and achieved reasonable results. 
+Finally, we do projection of $(z_l)_i$ to corresponding feasible space. \\\\
+\textbf{Update $z_L$:  }  We have to first decide the choice of loss function $l$. We tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimization subproblem. Both of them worked out and achieved reasonable results. 
 
-To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various number of hidden layers and its dimension. The weight matrix $W$ is initialized with random samples from Gaussian distribution with zero mean and standard deviation $\epsilon^2$. 
+To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. The weight matrix $W$ is initialized with random samples from $N(\mu=0, \sigma^2=1)$ Gaussian distribution and then multiplied with $\epsilon$. 
 
-According to the methods published in "The MNIST Dataset" \footnote{http://yann.lecun.com/exdb/mnist/}, ANN should achieve at least 95\% accuracy.  Also, the tutorial implementation from Tensorflow also results an accuracy around 92\%. However, after we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l$, etc.),  the best accuracy our network can achieve is around 87\%, which is far away from the result stated on the Mnist website. 
+After we tuned a list of hyper-parameters (e.g. $\epsilon$, $\beta_l$, $\gamma_l$, etc.), the results giving the best accuracy rate are demonstrated in TABLE \ref{tab:res1}
+:
+\begin{table}[h]
+\centering
+\caption{}
+\begin{tabular}{|c|c|c|c|}
+\hline
+		Hidden Layers & Accuracy[\%] & Energy &Time[s]\\
+\hline
+		(300) & 95 & 2.0 & 3132\\
+		(500, 300) & 93 & 1.2 & 2324 \\
+\hline
+\end{tabular}
+\label{tab:res1}
+\end{table}
 
 \subsection{Analysis}
-In this section, we want to investigate the potential reasons of the low performance of our model. By looking at the energy, we found that the energy does not converge smoothly to the optimal. As illustrated by the Fig. \ref{fig:energySame}, the energy stops changing around 2.0 and it is supposed to decay to 0.
+According to the methods published in "The MNIST Dataset" \footnote{http://yann.lecun.com/exdb/mnist/}, ANN should achieve at least 95\% accuracy. The implementation from Tensorflow results an accuracy around 92\%. Additionally, the loss energy does not converge to the optimal one, i.e. it stops decaying around 2 but the optimal result should be 0, which is shown in Fig.\ref{fig:energySame}.
 
 \begin{figure}
 \centering
@@ -209,7 +223,7 @@ In this section, we want to investigate the potential reasons of the low perform
 \label{fig:energyWithoutLambda}
 \end{figure}
 
-Recall the difference between the Goldstein ADMM and the classical ADMM, the Lagrange multiplier and the Bregman iteration might contribute to the low performance. Therefore, we remove the Lagrange term and only include the quadratic penalties into objective function.
+Recall the difference between the Goldstein ADMM and the classical ADMM, the Lagrange multiplier and the Bregman iteration might contribute to the low performance. Therefore, we remove the Lagrange item and only include the quadratic penalties into objective function.
 
 We apply Algorithm \ref{alg:goldADMM} with $\lambda=0$ and deleting line 10 to solve equation \eqref{eq:quadratic_only}. A result with lower energy and higher accuracy is achieved, which is illustrated in Fig.\ref{fig:energyWithoutLambda}. Based on this fact, we guess the Bregman iteration and the Lagrange multiplier are the main reason for the low performance.
 
@@ -227,7 +241,7 @@ which can be viewed as an ANN with 1 layers and the dimension of $a$ is $\mathbb
 & \underset{w,a}{\text{minimize}}  & & (a-1)^2 + \lambda \cdot a + \beta (2-w-a)^2\\
 \end{aligned}
 \end{equation}
-Above problem can be solve by using Algorithm \ref{alg:goldADMM}, which giving us:
+Above problem can be solve by using the same procedure from \ref{alg:goldADMM}, at each iteration $k$, we can get
 \begin{equation}
 \begin{aligned}
 w^{k+1} &= 2-a^k \\
@@ -236,7 +250,7 @@ a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
 \end{aligned}
 \label{eq:demoupdate}
 \end{equation}
-This test example cannot return the optimal solution $w=1,a=1$ unless one of them is initialized as 1. However, the result can always satisfy the constraint. This is because of the property of Bregman iteration: once a feasible result is achieved, the iteration stops and it is the optimal one. It is obvious that when $w^k$ and $a^k$ satisfy the constraints, equation \eqref{eq:demoupdate} will stop updating. To show the rest of this property, recall that Bregman iteration wants to minimize the Bregman distance $D^p_J(u,v) = J(u)-J(v)-<p,u-v>, p \in \partial J(v)$ which is nonnegative. Therefore, substitute our problem into the nonnegative inequality, for any $a$, we can get
+This test example cannot return the result $w=1,a=1$ unless one of them is initialized as 1. However, the result can always satisfy the constraint. This is because of the property of Bregman iteration: once a feasible result is achieved, the iteration stops and it is the optimal one. It is obvious that when $w^k$ and $a^k$ satisfy the constraints, equation \eqref{eq:demoupdate} will stop updating. To show the rest of this property, recall that Bregman iteration wants to minimize the Bregman distance $D^p_J(u,v) = J(u)-J(v)-<p,u-v>, p \in \partial J(v)$ which is nonnegative. Therefore, substitute our problem into the nonnegative inequality, for any $a$, we can get
 \begin{equation}
 \begin{aligned}
 J(a^k) & \leq J(a) -(a-a^k) \cdot \lambda^k \\
@@ -297,7 +311,7 @@ This optimization problem can be solved by Algorithm \ref{alg:goldADMM} with a l
 \label{fig:cmpCons}
 \end{figure*}
 
-It is obvious that once the optimal value is got, the corresponding $\{W_l\}$, $\{a_l\}$,$\{z_l\}$ are feasible for equation \eqref{eq:model}. However, the experiments show that the norms of constraints decays slowly, as illustrated in Fig.\ref{fig:cmpCons}. This is caused by the property of ADMM that original complex problem is decomposed into several simpler subproblems. Updating $\{a_l\}$ and $\{z_l\}$ become a trade-off between satisfying the constraints and minimizing loss function. If increasing the weight of each constraint, constraints are satisfied faster with higher loss energy. Additionally, increasing the iteration number can satisfy the constraints and lower the loss energy at the same time, which accounts for more computational expensive especially for large dataset.
+It is obvious that once the optimal value is got, the corresponding $\{W_l\}$, $\{a_l\}$,$\{z_l\}$ are feasible for equation \eqref{eq:model}. However, the experiments show that the norms of constraints decays slowly, as illustrated in Fig.\ref{fig:cmpCons}. This is caused by the property of ADMM that original complex problem is decomposed into several simpler subproblems. Updating $\{a_l\}$ and $\{z_l\}$ become a trade-off between satisfying the constraints and minimizing loss function. If increasing the weight of each constraint, constraints are satisfied faster with higher loss energy. Additionally, increasing the iteration number can satisfy the constraints and lower the loss energy at the same time, which accounts for more computational expensive especially for large data set.
 
 \subsection{Bregman iteration with increasing penalty weights}
 To overcome the disadvantage of quadratic penalty method, a time-saving algorithm, which can satisfy constraints and minimize loss function at the same time, is proposed. Inspired by above discussion about the weight of each constraints, in this algorithm, the penalty weights are increasing at each iteration. To improve the efficiency, we also implement mini-batch for this algorithm. Besides, the regularization item is involved in the object function to prevent over-fitting and numerical errors.
@@ -337,7 +351,7 @@ initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
 
 \end{algorithm}
 
-\textbf{Increasing penalty weights}: according to the discussion in quadratic penalty method, the weights of penalty play an important role in satisfying constraints and minimizing loss function. Therefore, the main idea is that the initial value of the weights are sufficient small and at each iteration, the weights are multiplied by a constant $\rho>1$. We also involve the Lagrange multiplier $\lambda$ and apply the same Bregman iteration as Goldstein ADMM to force the constraints to be satisfied faster. The main reason is that with small $\{\beta_L\}$, the $\lambda$ has ignorable effect on updating $z_L$ since $\lambda$ is initialized with 0. Thus, at the beginning iterations, a $z_L$ which can minimizing the loss function sufficiently, is achieved. When the $\{\beta_L\}$ becomes large enough, $z_L$ has to satisfy the constraints as well. To validate our idea, we still use equation \eqref{eq:demo}. $\beta$ is initialized with 0.0001 and $\rho$ is 1.01. For each iteration $k$, we get
+\textbf{Increasing penalty weights}: according to the discussion in quadratic penalty method, the weights of penalty play an important role in satisfying constraints and minimizing loss function. Therefore, the main idea is that the initial value of the weights are sufficient small and at each iteration, the weights are multiplied by a constant $\rho>1$. We also involve the Lagrange multiplier $\lambda$ and apply the same Bregman iteration as Goldstein ADMM to force the constraints to be satisfied faster. The main reason is that with small $\{beta_L\}$, the $\lambda$ has ignorable effect on updating $z_L$ since $\lambda$ is initialized with 0. Thus, at the beginning iterations, a $z_L$ which can minimizing the loss function sufficiently, is achieved. When the $\{beta_L\}$ becomes large enough, $z_L$ has to satisfy the constraints as well. To validate our idea, we still use equation \eqref{eq:demo}. $\beta$ is initialized with 0.0001 and $rho$ is 1.01. For each iteration $k$, we get
 \begin{equation}
 \begin{aligned}
 w^{k+1} &= 2-a^k \\
@@ -349,24 +363,9 @@ a^{k+1} &= \frac{\lambda^k+2+4\beta-2\beta w^{k+1}}{2+2\beta}\\
 \end{equation}
 The test result is $x=1.0001, w=0.9999$. Even if the iteration number is increased, it cannot converge to the optimal result, which means this algorithm can only converges to the neighborhood of the optimal result. The radius of the neighborhood depends on the initial value of $\beta$. If $\beta$ is initialized with smaller positive value, a final result which is closer to optimal one is achieved, which coincides with above analysis. Another parameter $\rho$ is determined based on the initial value of $\beta$. Small $\rho$ leads to a slow speed of satisfying the constraints. Too large $\rho$ results in a high loss energy. Besides, this algorithm is also tested on nonlinear case and can work as well. Therefore, even with the disadvantage that it can only reach the neighborhood, we decide to apply this algorithm to solve equation \eqref{eq:model}.
 
-
-
-\textbf{Other improvement}: We implement the mini-batch to our algorithm. The basic idea is that a batch is randomly chose from the dataset. Then the neural network is trained by this batch. After several iterations, a new batch is chose and train the neural network based on previous results. Besides, we also include the regularization item for $\{W_l\}$ to solve the numerical errors and over-fitting. The new problem then becomes:
-
-
-\section{Experiments} \label{experiment}
-In this section, we show the numeric results of Alg \ref{alg:ourADMM} on three different datasets: MNIST and CresentMoon. 
-
-\subsection{MNIST}
-For this dataset, two neural network are applied. The first neural network contains one hidden layer of 300 neurons. Another neural network contains two hidden layers. The first hidden layer contains 500 neurons while the second one contains 300 neurons. To train the neural network, we apply mini batch to both of them. The batch size is 400. The total training set are 60,000 examples and no validation examples. Other parameters and the final result are showed in table \ref{tab:parMNIST}.
-
-
-
-The accuracy is not as good as the same neural network published on the website. Therefore, we also try to train the neural network without mini batch. The results become better than this which can achieve a accuracy around 97\% and energy smaller than 0.1. 
-
 \begin{table*}[h]
 \centering
-\caption{Results on Mnist}
+\caption{}
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
 \hline
 	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & inIteration & outIteration & weight decay & final energy & train accuracy & test accuracy\\
@@ -378,29 +377,32 @@ The accuracy is not as good as the same neural network published on the website.
 \label{tab:parMNIST}
 \end{table*}
 
+\textbf{Other improvement}: We implement the mini-batch to our algorithm. The basic idea is that a batch is randomly chose from the data set. Then the neural network is trained by this batch. After several iterations, a new batch is chose and train the neural network based on previous results. Besides, we also include the regularization item for $\{W_l\}$ to solve the numerical errors and over-fitting. The new problem then becomes:
+
+
+\section{Experiments} \label{experiment}
+In this section, we show the numeric results of Alg \ref{alg:ourADMM} on three different datasets: Mnist and CresentMoon. The following experiments were run on CPU (MacBook Air Early 2014 with 1,7 GHz Intel Core i7). For every case, we pick weight decay as 1e-3.
+
+\subsection{Mnist}
+The Mnist dataset has 60,000 training images and 10000 tesing images. We used all 60,000 examples for training and didn't have any validation examples. To validate the algorithm, we trained the network with two structure and the corresponding result is shown in table  \ref{tab:parMNIST}.  In both case, we initialize the all weight matrices $w_l$ as zero mean Gaussian random weights with standard deviation $\epsilon$ = 1e-1.We applied mini-batch for training both of them for time efficiency. Each batch has 400 images, and 4 ADMM steps are applied per batch. We found that both networks are better trained by starting with very small penalty parameters $\{\beta_l\}$, $\{\gamma_l\}$ and then increasing them with small growing step $\rho$. 
+
+
 \begin{table*}[h]
 \centering
 \caption{Results on CrescentMoon}
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
 \hline
-	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & inIteration & outIteration & weight decay & final energy & train accuracy & test accuracy\\
+	Hidden Layers & $\{\beta_l\}$ & $\{\gamma_l\}$ & $\rho$ & iters & time & final energy & train acc & test acc\\
 \hline
-		(300) & 1e-6 & 1e-6 & 1.05 & 4 & 400 & 1e-3 & 0.15378 & 95.4\% & 94.8\% \\
-		(500,300) & 1e-8 & 1e-8 & 1.05 & 4 & 400 & 1e-3 & 0.15871 & 95.2 \% & 95.1\% \\ 
+		(50,50) & 1e-2 & 1e-2 & 1.01 & 450 &  71s & 0.1026 & 95.40\% & 94.74\% \\
+		(10,10,10,10,10) & 1e-2 & 1e-2 & 1.02 & 450 & 18s & 0.1063 & 95.46 \% & 94.80\% \\ 
 \hline
 \end{tabular}
 \label{tab:parMoon}
 \end{table*}
 
 \subsection{CrescentMoon}
-For this dataset, two neural network are applied. The first neural network contains one hidden layer of 300 neurons. Another neural network contains two hidden layers. The first hidden layer contains 500 neurons while the second one contains 300 neurons. To train the neural network, we apply mini batch to both of them. The batch size is 400. The total training set are 60,000 examples and no validation examples. Other parameters and the final result are showed in table \ref{tab:parMoon}.
-
-
-
-The accuracy is not as good as the same neural network published on the website. Therefore, we also try to train the neural network without mini batch. The results become better than this which can achieve a accuracy around 97\% and energy smaller than 0.1. 
-
-
-
+This dataset is much smaller than Mnist, with 6867 training images, no validation images and 3133 testing image. This time we didn't use mini-batch during training. Two different network structures are trained and the corresponding result is shown in table  \ref{tab:parMoon}. In both case, we initialize the all weight matrices $w_l$ as zero mean Gaussian random weights with standard deviation $\epsilon$ = 1e-2. For the second case with more hidden layers i.e. (10,10,10,10,10), we notice much more unstable performance of the Alg \ref{alg:ourADMM}, compared with the first case. In table \ref{tab:parMoon}, the first configuration we can always get accuracy around 95.4\%. However, with the second configuration, the algorithm sometimes give testing accuracy only around 80\%, even though one can get accuracy around 95.4\% after several tryings.  In addition, we found for case two several settings can reach close testing accuracy, but also has similar unstable behavior. The reason of such an instability is not clear to us yet.
 
 \section{Conclusion} \label{conclusion}
 
@@ -435,6 +437,14 @@ The accuracy is not as good as the same neural network published on the website.
 \bibitem{9} Taylor, Gavin, et al. "Training neural networks without gradients: A scalable admm approach." International Conference on Machine Learning. 2016.
 
 \bibitem{10} Goldstein, Tom, and Stanley Osher. "The split Bregman method for L1-regularized problems." SIAM journal on imaging sciences 2.2 (2009): 323-343.
+
+\bibitem{11} 
+\bibitem{12} 
+\bibitem{13} 
+
+
+
+
 
 \end{thebibliography}
 \end{document}
