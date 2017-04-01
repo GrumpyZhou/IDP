@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import time
+import scipy.io as sio
 
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -56,6 +57,14 @@ print 'Prediction of test accuracy: %f' %np.mean(Yte_pred == Yte)
 # Predict train
 Ytr_pred = network.predict(Xtr)
 print 'Prediction of train accuracy: %f' %np.mean(Ytr_pred == Ytr)
+
+# Save weight as .mat
+weight = {}
+for i in range(1,len(network.W)):
+    name = 'w%d'%i
+    weight[name] = network.W[i]
+print weight.keys()
+sio.savemat('./mnist1.mat',weight)
 
 """
 # For visualization
