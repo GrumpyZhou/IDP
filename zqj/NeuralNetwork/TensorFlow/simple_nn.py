@@ -16,7 +16,8 @@ import mnist as mst
 
 learning_rate = 0.01
 max_steps = 2000
-hidden1 = 300
+hidden1 = 500#500
+hidden2 = 300
 batch_size = 100
 fake_data = False
 train_dir = 'data'
@@ -68,30 +69,21 @@ def do_eval(sess,
     true_count += count 
   precision = true_count / num_examples
   #print(true_count / num_examples)
-  print('Eval:  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
+  print('Eval:  Num examples: %d  Num correct: %d  Precision: %0.04f' %
         (num_examples, true_count, precision))
 
 
 
 with tf.Graph().as_default() as g:
-    # Generate placeholders for the images and labels.
     images_placeholder, labels_placeholder = placeholder_inputs(batch_size)
+    logits, regularizer = mst.inference(images_placeholder,hidden1, hidden2)
+    loss = mst.loss(logits,labels_placeholder, regularizer, decay=0.001 )
 
-    # Build a Graph that computes predictions from the inference model.
-    logits = mst.inference2(images_placeholder,hidden1)
-    # Add to the Graph the Ops for loss calculation.
-    loss = mst.loss(logits, labels_placeholder)
-
-    # Add to the Graph the Ops that calculate and apply gradients.
     train_op = mst.training(loss, learning_rate)
 
     # Add the Op to compare the logits to the labels during evaluation.
     eval_correct = mst.evaluation(logits, labels_placeholder)
     init = tf.initialize_all_variables()
-
-    # Create a saver for writing training checkpoints.
-    # saver = tf.train.Saver()
-
     # Create a session for running Ops on the Graph.
     sess = tf.Session()
     sess.run(init)
@@ -103,7 +95,7 @@ with tf.Graph().as_default() as g:
         
         duration = time.time() - start_time       
         # Write the summaries and print an overview fairly often.
-        if step % 200 == 0:
+        if step % 200 == 0 or (step == max_steps):
 #         # Print status to stdout.
             print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
@@ -132,8 +124,6 @@ with tf.Graph().as_default() as g:
                     labels_placeholder,
                     data_sets.test)
         
-print('Step %d: loss = %.2f' % (step, loss_value))    
-
 #w1 = g.get_collection(tf.GraphKeys.VARIABLES, "hidden1/weights")
 #w2 = g.get_collection(tf.GraphKeys.VARIABLES, "softmax_linear/weights")
 #w1_val,w2_val = sess.run([w1,w2])

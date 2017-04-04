@@ -42,7 +42,7 @@ IMAGE_SIZE = 28
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 
-def inference(images, hidden1_units, hidden2_units):
+def inference_old(images, hidden1_units, hidden2_units):
   """Build the MNIST model up to where it may be used for inference.
 
   Args:
@@ -83,7 +83,7 @@ def inference(images, hidden1_units, hidden2_units):
     logits = tf.matmul(hidden2, weights) + biases
   return logits
 
-def inference2(images, hidden1_units):
+def inference(images, hidden1_units, hidden2_units=None):
   # Hidden 1
   with tf.name_scope('hidden1'):
     weights = tf.Variable(
@@ -91,16 +91,31 @@ def inference2(images, hidden1_units):
                             stddev=1.0 / math.sqrt(float(IMAGE_PIXELS))),
         name='weights')
     hidden1 = tf.nn.relu(tf.matmul(images, weights))
+    regularizer = tf.nn.l2_loss(weights)
+
+  # Hidden 2
+  if hidden2_units is not None:
+      with tf.name_scope('hidden2'):
+        weights = tf.Variable(
+            tf.truncated_normal([hidden1_units, hidden2_units],
+                                stddev=1.0 / math.sqrt(float(hidden1_units))),
+            name='weights')
+        hidden2 = tf.nn.relu(tf.matmul(hidden1, weights))
+        regularizer += tf.nn.l2_loss(weights)
   # Linear
   with tf.name_scope('softmax_linear'):
-    weights = tf.Variable(
-        tf.truncated_normal([hidden1_units, NUM_CLASSES],
-                            stddev=1.0 / math.sqrt(float(hidden1_units))),
-        name='weights')
-    logits = tf.matmul(hidden1, weights, name='logits')
-  return logits
+    if hidden2_units is None:
+        weights = tf.Variable(tf.truncated_normal([hidden1_units, NUM_CLASSES],
+                            stddev=1.0 / math.sqrt(float(hidden1_units))),name='weights')
+        logits = tf.matmul(hidden1, weights, name='logits')
+    else:
+        weights = tf.Variable(tf.truncated_normal([hidden2_units, NUM_CLASSES],
+                            stddev=1.0 / math.sqrt(float(hidden1_units))),name='weights')
+        logits = tf.matmul(hidden2, weights, name='logits')        
+    regularizer += tf.nn.l2_loss(weights)
+  return logits, regularizer
 
-def loss(logits, labels):
+def loss(logits, labels, regularizer, decay=0.001):
   """Calculates the loss from the logits and the labels.
 
   Args:
@@ -111,9 +126,10 @@ def loss(logits, labels):
     loss: Loss tensor of type float.
   """
   labels = tf.to_int64(labels)
-  cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
-      logits, labels, name='xentropy')
-  loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
+  loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+      logits, labels))
+  # Add regularizer
+  loss = loss + decay * regularizer  
   return loss
 
 
@@ -137,7 +153,9 @@ def training(loss, learning_rate):
   # Add a scalar summary for the snapshot loss.
   tf.scalar_summary(loss.op.name, loss)
   # Create the gradient descent optimizer with the given learning rate.
-  optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+  optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=0.98, use_nesterov=True)
+  #tf.train.GradientDescentOptimizer(learning_rate)
+
   # Create a variable to track the global step.
   global_step = tf.Variable(0, name='global_step', trainable=False)
   # Use the optimizer to apply the gradients that minimize the loss
