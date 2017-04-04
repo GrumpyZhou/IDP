@@ -162,7 +162,7 @@ initialize $\{a_l\}^{L}_{l=1}$, $\{z_l\}^{L}_{l=1}$, $\lambda$ and weights\\
 		 $W_l \gets  z_la_{l-1}^\dagger$ \\
 		 $a_l \gets (\beta_{l+1}W_{l+1}^TW_{l+1}+\gamma_lI)^{-1}$\\  
 	    $~~~~~~ \cdot (\beta_{l+1}W_{l+1}^Tz_{l+1}+\gamma_lh_l(z_l))$\\
-	    $z_l \gets argmin_z ||a_l-h_l(z)||^2 + \beta_l||z-W_la_{l-1}||^2$\\
+	    $z_l \gets argmin_z \gamma_l||a_l-h_l(z)||^2 + \beta_l||z-W_la_{l-1}||^2$\\
 	}
 	$W_L \gets z_La_{L-1}^\dagger$\\
 	$z_L \gets argmin_z \mathcal{L}(z,y) + <z, \lambda> + \beta_L||z-W_La_{L-1}||^2$\\
@@ -178,16 +178,35 @@ $h(x) = \begin{cases} x, & \mbox{if } x> 0 \\0, & \mbox{otherwise }\end{cases} $
 \end{center}
 
 In the following, we discuss only the updates of $z_l$ and $z_L$, which is not as straightforward as the others.\\
-\textbf{Update $z_l$:  }  Calculating the derivative of $h_l(z)$  we get:
-\begin{center}
-$(\partial_z h_l)_i = \begin{cases} 1, & \mbox{if } x> 0 \\0, & \mbox{otherwise }\end{cases} $
-\end{center}
-Then we get element-wise update of $(z_l)_i$ in following closed form:
-\begin{center}
-$(z_l)_i = \begin{cases} \frac{\gamma_la_l + \beta_lW_la_{l-1}}{\gamma_l + \beta_l}, & \mbox{if} (z_l)_i> 0 \\(W_la_{l-1})_i, & \mbox{otherwise}\end{cases} $
-\end{center}
-Finally, we do projection of $(z_l)_i$ to corresponding feasible space. \\\\
-\textbf{Update $z_L$:  }  We have to first decide the choice of loss function $l$. We tried to use hinge loss, mean square and softmax cross entropy, it turned out softmax has the best numerical result. However, using softmax as the loss function makes the $z_L$ update unsolvable in a closed form. Thus, we tried to use both gradient descent and proximal gradient to solve the minimization subproblem. Both of them worked out and achieved reasonable results. 
+\textbf{Update $z_l$:  } Since this sub problem is separable, we can compute $z_l$ element-wisely. The original problem can be written as:
+\begin{equation}
+z_l(i,j) \gets argmin_z \gamma_l(a_l(i,j)-h_l(z))^2 + \beta_l(z-W_la_{l-1}(i,j))^2
+\label{eq:elementwise}
+\end{equation}
+where $a_l(i,j)$ represents the element in $i$-th row and $j$-th column of $a_l$, and analogously for $W_la_{l-1}(i,j)$.
+
+Even though the element-wise problem is nonconvex, it can be solved to global optimality. There are two cases for possible $z_l(i,j)$:
+\begin{equation}
+\begin{aligned}
+1. & \text{assume } z_l(i,j) \geq 0 \\
+& z_l(i,,j) \gets argmin_z ~\gamma_l(a_l(i,j)-z)^2 + \beta_l(z-W_la_{l-1}(i,j))^2\\
+& \Rightarrow \left\{
+\begin{array}{ll}
+      \widehat{z} = \frac{\gamma_la_l(i,j)+\beta_lW_la_{l-1}(i,j)}{\beta_l+\gamma_l}, & \gamma_la_l(i,j)\geq -\beta_lW_la_{l-1}(i,j)\\
+      0, & otherwise \\
+\end{array} 
+\right. \\
+2. &  \text{assume } z_l(i,j) \leq 0 \\
+& z_l(i,,j) \gets argmin_z ~\beta_l(z-W_la_{l-1}(i,j))^2\\
+& \Rightarrow \left\{
+\begin{array}{ll}
+      \widehat{z} = W_la_{l-1}(i,j), & \beta_lW_la_{l-1}(i,j) \leq 0\\
+      0, & otherwise \\
+\end{array} 
+\right. \\
+\end{aligned}
+\end{equation}
+Therefore, for a given $W_l$, $a_l$ and $a_{l-1}$, there are three possible choices of $z_l$ for each element. We can substitute all of possible $z_l$ into equation \eqref{eq:elementwise}. The feasible and optimal $z_l$ is chosen for each element to get the optimal solution.
 
 To evaluate the method, we tested it on Mnist dataset with different network architectures i.e. various hidden layers. The weight matrix $W$ is initialized with random samples from $N(\mu=0, \sigma^2=1)$ Gaussian distribution and then multiplied with $\epsilon$. 
 
